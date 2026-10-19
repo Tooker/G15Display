@@ -14,8 +14,16 @@ When built locally, the app is at **`dist/G15 Display.app`**. Double-click to
 open it; no Terminal or separate Python installation is required. The Apple
 Silicon app is approximately 34 MB uncompressed.
 
-The current app and LCD interface use German labels. Their English meanings
-are included below where needed.
+The source version (1.1.0, not yet released) supports **English, Español,
+Français, and Deutsch** for both the app and LCD. Select a language at the top
+right of the main window. The choice is saved and applied immediately, including
+to an open macro window, without resetting timers or changing macro assignments.
+On first launch, the app uses the first supported macOS preferred language,
+falling back to English. System permission prompts follow macOS language settings.
+The published 1.0.0 download still has the original German interface.
+
+Documentation remains in English. The German button names below refer to the
+German mode and the 1.0.0 download; their English meanings are included.
 
 - Live preview using the same pixel font as the keyboard display.
 - Switch pages using the page selector, on-screen buttons, or physical G15 buttons.
@@ -175,6 +183,9 @@ Alternatively, run it from the project directory:
 ```sh
 .venv/bin/python -m g15display menu
 
+# Run in a specific language (en, es, fr, de)
+.venv/bin/python -m g15display menu --language fr
+
 # Start on a specific page
 .venv/bin/python -m g15display menu --page limits
 
@@ -254,9 +265,15 @@ when Codex or a player does not answer. Missing data is shown as unavailable
 instead of being replaced with sample values. The dashboard uses `psutil` for
 network and player detection; it is installed with the project.
 
+The command-line tools also accept `--language en|es|fr|de`, either before or
+after the subcommand. Without it, they use the locale from the shell environment
+and fall back to English. Library objects retain German as their default for
+compatibility; pass `language="en"`, `"es"`, `"fr"`, or `"de"` explicitly.
+
 The LCD font uses fixed 5×7 pixel characters with a one-column gap. Large digits
 are scaled to exactly twice their size. All text is uppercase; German umlauts
-are rendered as AE/OE/UE and ß as SS. Each line fits at most 26 characters.
+are rendered as AE/OE/UE and ß as SS. French and Spanish accents are reduced to their base letters on the LCD;
+the native app retains accented characters. Each line fits at most 26 characters.
 Scrolling text waits three seconds, then advances one character per second.
 After font or layout changes, stop the running Terminal dashboard with Ctrl+C
 and restart it to load the changes.
@@ -362,7 +379,7 @@ text on the physical LCD. A subsequent live key test received press and release
 events for L2–L5, G1–G5, G7–G10, and G12–G18. Other keys follow the protocol
 mapping but have not each been confirmed on hardware.
 
-All 54 automated tests pass, covering menu navigation, timers/Pomodoro,
+All 63 automated tests pass, covering menu navigation, timers/Pomodoro,
 background operation while switching pages, data sources, and error handling.
 Limits, local task metadata, and network data were retrieved live. After macOS
 permission was granted, Spotify returned the paused title, position, and duration;
@@ -374,8 +391,12 @@ were verified. The package check confirms arm64, a bundled Python runtime,
 HIDAPI 0.15.0, and 992-byte reports. The ad-hoc code signature was verified.
 Macro tests additionally cover profile persistence, separate M-banks, start/stop,
 cancellation with key release, platform identifiers, and recording permissions
-using simulated keyboard events. The native macro window and normal app exit
-were checked. A complete live recording/playback test with user-granted macOS
+using simulated keyboard events. Localization tests cover all four languages,
+format placeholders, compact LCD labels, language switching during a timer and
+a recording, preservation of user content, and command-line language selection.
+The native macro window and normal app exit
+were checked. All four native language modes were checked visually, including
+the French macro window, and the selected language persisted across an app restart. A complete live recording/playback test with user-granted macOS
 permissions remains outstanding.
 
 `scripts/preview_menu.py` generates the combined page preview at

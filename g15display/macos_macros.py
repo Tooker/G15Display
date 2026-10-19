@@ -8,6 +8,8 @@ import Quartz as Q
 
 from .macros import Macro, MacroPlayer, MacroStore, MAX_EVENTS, MAX_SECONDS, Stroke, binding_key
 
+from .i18n import Translator, Message
+
 EVENT_TAG = 0x4731354D
 
 
@@ -23,7 +25,8 @@ def post_stroke(stroke):
 
 
 class MacMacroService:
-    def __init__(self, store=None, clock=time.monotonic):
+    def __init__(self, store=None, clock=time.monotonic, language="de"):
+        self.tr = Translator(language)
         self.store = store or MacroStore()
         self.clock = clock
         self.player = MacroPlayer(post_stroke)
@@ -113,7 +116,7 @@ class MacMacroService:
                 try:
                     bank, key, name = target
                     self.store.set(bank, key, Macro(name, events).validate())
-                    self.message = f"{bank}/{key}: {len(events)} Ereignisse gespeichert."
+                    self.message = Message("{bank}/{key}: {count} Ereignisse gespeichert.", dict(bank=bank, key=key, count=len(events)))
                 except (ValueError, OSError) as exc:
                     self.message = str(exc)
             elif target:
@@ -138,7 +141,7 @@ class MacMacroService:
                 return
             try:
                 self.player.play(macro)
-                self.message = f"Wiedergabe {bank}/{key} gestartet."
+                self.message = Message("Wiedergabe {bank}/{key} gestartet.", dict(bank=bank, key=key))
             except ValueError as exc:
                 self.message = str(exc)
 
@@ -165,7 +168,7 @@ class MacMacroService:
                 if remaining <= 0:
                     self._start()
                 else:
-                    self.message = f"Aufnahme in {int(remaining) + 1} Sekunden – Zielprogramm auswählen."
+                    self.message = Message("Aufnahme in {seconds} Sekunden – Zielprogramm auswählen.", dict(seconds=int(remaining) + 1))
             if self.target and self.countdown is None and self.clock() - self.started >= MAX_SECONDS:
                 self.stop()
             if self.play_pending and self.clock() >= self.play_pending[0]:
@@ -177,7 +180,7 @@ class MacMacroService:
 
     def snapshot(self):
         with self.mutex:
-            return dict(recording=self.target is not None, message=self.message,
+            return dict(recording=self.target is not None, message=self.tr(self.message),
                         playing=self.player.busy or self.play_pending is not None, count=len(self.events))
 
     def close(self):

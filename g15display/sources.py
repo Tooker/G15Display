@@ -82,7 +82,7 @@ class CodexClient:
                     stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
                 self.reader = threading.Thread(target=self._read, args=(self.process, self.messages), daemon=True)
                 self.reader.start()
-                self._call("initialize", {"clientInfo": {"name": "g15display", "version": "1.0.0"}})
+                self._call("initialize", {"clientInfo": {"name": "g15display", "version": "1.1.0"}})
                 self.process.stdin.write('{"method":"initialized","params":{}}\n')
                 self.process.stdin.flush()
             result = self._call("account/rateLimits/read")
@@ -170,7 +170,7 @@ class ActivitySource:
                             state["active"] = True
                         elif kind in ("task_complete", "turn_aborted"):
                             state["active"] = False
-                item = {"name": title or "Unbenannter Chat", "stamp": state["stamp"]}
+                item = {"name": title or "", "stamp": state["stamp"]}
                 if state["active"] is True:
                     (active if time.time() - state["stamp"] < 600 else unknown).append(item)
                 elif state["active"] is False:

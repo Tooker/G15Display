@@ -14,6 +14,7 @@ from .display import G15, G15Error
 from .keys import KeyEvent
 from .sources import Sources
 from .timers import Timer
+from .i18n import normalize_language
 
 
 @dataclass(frozen=True)
@@ -50,12 +51,12 @@ def legacy_menu_running():
 
 class AppController:
     def __init__(self, settings=None, *, page="clock", sources=None, device_factory=G15,
-                 legacy_check=legacy_menu_running, clock=time.monotonic, macros=None):
+                 legacy_check=legacy_menu_running, clock=time.monotonic, macros=None, language="de"):
         self.settings = (settings or Settings()).validate()
         self.sources = sources or Sources()
         self.dashboard = Dashboard(self.sources, page=page, minutes=self.settings.minutes,
                                    work=self.settings.work, rest=self.settings.rest,
-                                   rounds=self.settings.rounds, clock=clock)
+                                   rounds=self.settings.rounds, clock=clock, language=language)
         self.device_factory, self.legacy_check, self.clock = device_factory, legacy_check, clock
         self.device = None
         self.enabled = True
@@ -126,6 +127,8 @@ class AppController:
             elif action == "key":
                 self.handle_key(KeyEvent(value, True))
                 self.handle_key(KeyEvent(value, False))
+            elif action == "language":
+                self.dashboard.tr.language = normalize_language(value)
             elif action == "bank" and value in ("M1", "M2", "M3"):
                 self.bank = value
             elif action == "settings":
@@ -146,14 +149,14 @@ class AppController:
                 self.device = device
                 self.error = ""
             except (G15Error, OSError) as exc:
-                self.error = str(exc)
+                self.error = exc
                 self.retry_at = self.clock() + 2
         if self.device is not None:
             try:
                 for event in self.device.read_keys(timeout_ms=25):
                     self.handle_key(event)
             except (G15Error, OSError) as exc:
-                self.error = str(exc)
+                self.error = exc
                 self._disconnect()
                 self.retry_at = self.clock() + 2
         image = self.dashboard.render()
@@ -163,16 +166,16 @@ class AppController:
                 self.device.show(image)
                 self.last_frame = frame
             except (G15Error, OSError) as exc:
-                self.error = str(exc)
+                self.error = exc
                 self._disconnect()
                 self.retry_at = self.clock() + 2
         with self.mutex:
             if not self.state or self.state["image"].tobytes() != frame:
                 self.revision += 1
             self.state = dict(image=image, revision=self.revision, connected=self.device is not None,
-                              enabled=self.enabled, error=self.error, page=self.dashboard.page,
+                              enabled=self.enabled, error=self.dashboard.tr(self.error), page=self.dashboard.page,
                               menu=self.dashboard.menu,
-                              bank=self.bank, last_g_key=self.last_g_key,
+                              bank=self.bank, last_g_key=self.last_g_key, language=self.dashboard.tr.language,
                               health={name: snapshot.error for name, snapshot in self.sources.snapshots.items()})
 
     def _run(self):

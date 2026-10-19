@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "g15display"
-version = "1.0.0"
-description = "Python-Prototyp für das Display der ursprünglichen Logitech G15"
+version = "1.1.0"
+description = "macOS controller for the original Logitech G15 display and G-key macros"
 requires-python = ">=3.10"
 dependencies = ["hidapi>=0.14,<0.16", "Pillow>=10.1,<14", "psutil>=6,<9"]
 

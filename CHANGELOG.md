@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.1.0 – Unreleased
+
+- Add English, Spanish, French, and German modes for the native app, macro
+  window, status/errors, and LCD dashboard.
+- Switch languages immediately from the main window; save the selection across
+  restarts. First launch follows supported macOS language preferences with an
+  English fallback.
+- Preserve running timers, recording state, macro names, and assignments when
+  changing language.
+- Add `--language en|es|fr|de` to command-line tools and localized macOS
+  permission descriptions. The documentation remains in English.
+- Add nine localization tests, bringing the automated suite to 63 tests.
+
 ## 1.0.0 – 2026-10-19
 
 First public release for the first-generation Logitech G15 (folding display,

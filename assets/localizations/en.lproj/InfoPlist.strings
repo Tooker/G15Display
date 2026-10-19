@@ -1,0 +1,2 @@
+"NSAppleEventsUsageDescription" = "Shows Spotify and Music tracks on your G15 and controls playback using the display buttons.";
+"NSInputMonitoringUsageDescription" = "Captures keyboard sequences only during a macro recording you start and reads G15 special keys.";

@@ -13,6 +13,7 @@ from PIL import Image
 from .app_controller import AppController, Settings
 from .dashboard import PAGES
 from .macos_macros import MacMacroService
+from .i18n import LANGUAGES, Translator
 
 PAGE_NAMES = ("Uhr", "Codex-Limits", "Laufende Codex-Aufgaben", "Timer", "Pomodoro", "Musik", "Netzwerk")
 
@@ -21,13 +22,18 @@ class G15Application(A.NSObject):
     def applicationDidFinishLaunching_(self, notification):
         self.defaults = F.NSUserDefaults.standardUserDefaults()
         self.defaults.registerDefaults_({"minutes": 5.0, "work": 25.0, "rest": 5.0, "rounds": 4})
+        saved = self.defaults.stringForKey_("language")
+        preferred = next((str(code) for code in F.NSLocale.preferredLanguages()
+                          if str(code).replace("_", "-").split("-")[0] in LANGUAGES), "en")
+        self.tr = Translator(saved or preferred)
+        self.localizedViews = []
         try:
             settings = Settings(self.defaults.doubleForKey_("minutes"), self.defaults.doubleForKey_("work"),
                                 self.defaults.doubleForKey_("rest"), self.defaults.integerForKey_("rounds")).validate()
         except ValueError:
             settings = Settings()
-        self.macros = MacMacroService()
-        self.controller = AppController(settings, macros=self.macros)
+        self.macros = MacMacroService(language=self.tr.language)
+        self.controller = AppController(settings, macros=self.macros, language=self.tr.language)
         self.macroWindow = None
         self.lastGShown = None
         self.quitting = False
@@ -42,10 +48,31 @@ class G15Application(A.NSObject):
         self.showWindow_(None)
 
     @objc.python_method
+    def localize(self, view, setter, source):
+        self.localizedViews.append((view, setter, source))
+        getattr(view, setter)(self.tr(source))
+        return view
+
+    def changeLanguage_(self, sender):
+        language = tuple(LANGUAGES)[sender.indexOfSelectedItem()]
+        self.defaults.setObject_forKey_(language, "language")
+        self.tr.language = language
+        self.macros.tr.language = language
+        self.controller.submit("language", language)
+        for view, setter, source in self.localizedViews:
+            getattr(view, setter)(self.tr(source))
+        selected = self.pagePopup.indexOfSelectedItem()
+        self.pagePopup.removeAllItems()
+        self.pagePopup.addItemsWithTitles_([self.tr(title) for title in PAGE_NAMES])
+        self.pagePopup.selectItemAtIndex_(selected)
+        self.revision = -1
+        self.refresh_(self.refreshTimer)
+
+    @objc.python_method
     def item(self, title, action, key=""):
         item = A.NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(title, action, key)
         item.setTarget_(self)
-        return item
+        return self.localize(item, "setTitle_", title)
 
     @objc.python_method
     def buildMenus(self):
@@ -60,7 +87,8 @@ class G15Application(A.NSObject):
         menu.addItem_(A.NSMenuItem.separatorItem())
         menu.addItem_(self.item("Zugriffseinstellungen …", "openPermissions:"))
         menu.addItem_(self.item("Beenden", "quit:", "q"))
-        self.statusItem = A.NSStatusBar.systemStatusBar().statusItemWithLength_(A.NSVariableStatusItemLength)
+        if not hasattr(self, "statusItem"):
+            self.statusItem = A.NSStatusBar.systemStatusBar().statusItemWithLength_(A.NSVariableStatusItemLength)
         self.statusItem.button().setTitle_("G15")
         self.statusItem.button().setToolTip_("G15 Display")
         self.statusItem.setMenu_(menu)
@@ -72,7 +100,11 @@ class G15Application(A.NSObject):
         edit_menu = A.NSMenu.alloc().initWithTitle_("Bearbeiten")
         for title, action, key in (("Ausschneiden", "cut:", "x"), ("Kopieren", "copy:", "c"),
                                    ("Einfügen", "paste:", "v"), ("Alles auswählen", "selectAll:", "a")):
-            edit_menu.addItem_(A.NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(title, action, key))
+            edit_entry = A.NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(title, action, key)
+            self.localize(edit_entry, "setTitle_", title)
+            edit_menu.addItem_(edit_entry)
+        self.localize(edit_item, "setTitle_", "Bearbeiten")
+        self.localize(edit_menu, "setTitle_", "Bearbeiten")
         edit_item.setSubmenu_(edit_menu)
         main.addItem_(edit_item)
         A.NSApplication.sharedApplication().setMainMenu_(main)
@@ -84,7 +116,7 @@ class G15Application(A.NSObject):
         label.setFont_(A.NSFont.systemFontOfSize_(size))
         label.setTextColor_(A.NSColor.secondaryLabelColor() if secondary else A.NSColor.labelColor())
         self.window.contentView().addSubview_(label)
-        return label
+        return self.localize(label, "setStringValue_", text)
 
     @objc.python_method
     def button(self, title, action, frame):
@@ -92,7 +124,7 @@ class G15Application(A.NSObject):
         button.setFrame_(frame)
         button.setBezelStyle_(A.NSBezelStyleRounded)
         self.window.contentView().addSubview_(button)
-        return button
+        return self.localize(button, "setTitle_", title)
 
     @objc.python_method
     def buildWindow(self, settings):
@@ -103,11 +135,18 @@ class G15Application(A.NSObject):
         self.window.setReleasedWhenClosed_(False)
         self.window.setDelegate_(self)
         self.window.center()
-        self.label("Dein G15-Dashboard", ((24, 492), (640, 30)), size=23)
+        self.label("Dein G15-Dashboard", ((24, 492), (430, 30)), size=23)
+        self.languagePopup = A.NSPopUpButton.alloc().initWithFrame_pullsDown_(((484, 491), (180, 30)), False)
+        self.languagePopup.addItemsWithTitles_(list(LANGUAGES.values()))
+        self.languagePopup.selectItemAtIndex_(tuple(LANGUAGES).index(self.tr.language))
+        self.localize(self.languagePopup, "setToolTip_", "Sprache")
+        self.languagePopup.setTarget_(self)
+        self.languagePopup.setAction_("changeLanguage:")
+        self.window.contentView().addSubview_(self.languagePopup)
         self.connectionLabel = self.label("Verbindung wird vorbereitet …", ((24, 457), (640, 32)), secondary=True)
         self.preview = A.NSImageView.alloc().initWithFrame_(((24, 278), (640, 172)))
         self.preview.setImageScaling_(A.NSImageScaleNone)
-        self.preview.setToolTip_("Live-Vorschau des 160 × 43 Pixel großen Displays")
+        self.localize(self.preview, "setToolTip_", "Live-Vorschau des 160 × 43 Pixel großen Displays")
         self.window.contentView().addSubview_(self.preview)
         self.lcdButtons = []
         for index, title in enumerate(("Zurück", "Weiter", "Aktion", "Menü")):
@@ -115,7 +154,7 @@ class G15Application(A.NSObject):
             button.setTag_(index)
             self.lcdButtons.append(button)
         self.pagePopup = A.NSPopUpButton.alloc().initWithFrame_pullsDown_(((24, 192), (250, 30)), False)
-        self.pagePopup.addItemsWithTitles_(PAGE_NAMES)
+        self.pagePopup.addItemsWithTitles_([self.tr(title) for title in PAGE_NAMES])
         self.pagePopup.setTarget_(self)
         self.pagePopup.setAction_("changePage:")
         self.window.contentView().addSubview_(self.pagePopup)
@@ -175,8 +214,8 @@ class G15Application(A.NSObject):
             settings = Settings(*values[:3], int(values[3])).validate()
         except ValueError as exc:
             alert = A.NSAlert.alloc().init()
-            alert.setMessageText_("Bitte die Timerzeiten prüfen")
-            alert.setInformativeText_(str(exc))
+            alert.setMessageText_(self.tr("Bitte die Timerzeiten prüfen"))
+            alert.setInformativeText_(self.tr(exc))
             alert.runModal()
             return
         for key, value in zip(("minutes", "work", "rest", "rounds"), values):
@@ -208,15 +247,15 @@ class G15Application(A.NSObject):
             status = "Display getrennt · Vorschau und Timer laufen weiter"
         else:
             status = state["error"] or "G15 wird gesucht …"
-        self.connectionLabel.setStringValue_(status)
+        self.connectionLabel.setStringValue_(self.tr(status))
         self.connectButton.setEnabled_(not state["enabled"] or not state["connected"])
         self.disconnectButton.setEnabled_(state["enabled"])
-        self.outputItem.setTitle_("Display trennen" if state["enabled"] else "Display verbinden")
+        self.outputItem.setTitle_(self.tr("Display trennen" if state["enabled"] else "Display verbinden"))
         self.pagePopup.selectItemAtIndex_(state["page"])
-        self.lcdButtons[3].setTitle_("Zur Uhr" if state["menu"] else "Menü")
+        self.lcdButtons[3].setTitle_(self.tr("Zur Uhr" if state["menu"] else "Menü"))
         health = state["health"]
         names = {"limits": "Codex-Limits", "activity": "Aufgaben", "music": "Musik", "network": "Netzwerk"}
-        summaries = [f"{names[name]}: {error or 'verbunden'}" for name, error in health.items()]
+        summaries = [f"{self.tr(names[name])}: {self.tr(error or 'verbunden')}" for name, error in health.items()]
         self.healthLabel.setStringValue_("  ·  ".join(summaries))
         if state["revision"] != self.revision and self.window.isVisible():
             self.revision = state["revision"]
@@ -237,7 +276,7 @@ class G15Application(A.NSObject):
         self.quitting = True
         self.controller.stop()
         self.macros.shutdown()
-        self.connectionLabel.setStringValue_("G15 Display wird beendet …")
+        self.connectionLabel.setStringValue_(self.tr("G15 Display wird beendet …"))
         return A.NSTerminateLater if self.controller.alive else A.NSTerminateNow
 
     @objc.python_method
@@ -246,26 +285,26 @@ class G15Application(A.NSObject):
         label.setFrame_(frame)
         label.setFont_(A.NSFont.systemFontOfSize_(size))
         self.macroWindow.contentView().addSubview_(label)
-        return label
+        return self.localize(label, "setStringValue_", text)
 
     @objc.python_method
     def macroButton(self, title, action, frame):
         button = A.NSButton.buttonWithTitle_target_action_(title, self, action)
         button.setFrame_(frame)
         self.macroWindow.contentView().addSubview_(button)
-        return button
+        return self.localize(button, "setTitle_", title)
 
     def showMacros_(self, sender):
         if self.macroWindow is None:
             style = A.NSWindowStyleMaskTitled | A.NSWindowStyleMaskClosable
             self.macroWindow = A.NSWindow.alloc().initWithContentRect_styleMask_backing_defer_(
                 ((0, 0), (688, 450)), style, A.NSBackingStoreBuffered, False)
-            self.macroWindow.setTitle_("G-Tasten & Makros")
+            self.localize(self.macroWindow, "setTitle_", "G-Tasten & Makros")
             self.macroWindow.setReleasedWhenClosed_(False)
             self.macroWindow.setDelegate_(self)
             self.macroWindow.center()
             self.macroLabel("G-Tasten & Makros", ((24, 398), (430, 32)), size=23)
-            self.macroStatus = self.macroLabel(self.macros.message, ((24, 342), (640, 48)))
+            self.macroStatus = self.macroLabel("", ((24, 342), (640, 48)))
             self.macroLabel("Bank", ((24, 322), (100, 18)), size=12)
             self.macroLabel("G-Taste", ((144, 322), (100, 18)), size=12)
             self.macroLabel("Name für die neue Aufnahme", ((264, 322), (400, 18)), size=12)
@@ -280,7 +319,7 @@ class G15Application(A.NSObject):
             self.gPopup.setAction_("macroKey:")
             self.macroWindow.contentView().addSubview_(self.gPopup)
             self.macroName = A.NSTextField.alloc().initWithFrame_(((264, 288), (400, 25)))
-            self.macroName.setPlaceholderString_("Zum Beispiel: Textbaustein")
+            self.localize(self.macroName, "setPlaceholderString_", "Zum Beispiel: Textbaustein")
             self.macroWindow.contentView().addSubview_(self.macroName)
             self.recordButton = self.macroButton("Aufnehmen", "recordMacro:", ((24, 236), (145, 32)))
             self.stopButton = self.macroButton("Stoppen", "stopMacro:", ((189, 236), (145, 32)))
@@ -345,7 +384,7 @@ class G15Application(A.NSObject):
 
     @objc.python_method
     def refreshMacros(self, state, recording):
-        self.macroStatus.setStringValue_(recording["message"])
+        self.macroStatus.setStringValue_(self.tr(recording["message"]))
         self.macroStatus.setTextColor_(A.NSColor.systemRedColor() if recording["recording"] else A.NSColor.labelColor())
         self.recordButton.setEnabled_(not recording["recording"] and not recording["playing"])
         self.stopButton.setEnabled_(recording["recording"] or recording["playing"])
@@ -363,10 +402,10 @@ class G15Application(A.NSObject):
                     self.macroKey_(None)
             if self.macroTarget() != self.shownMacroTarget:
                 self.macroKey_(None)
-        self.lastKeyLabel.setStringValue_(f"Aktive Bank: {state['bank']}   ·   Letzte G-Taste: {state['last_g_key'] or '—'}")
+        self.lastKeyLabel.setStringValue_(self.tr("Aktive Bank: {bank}   ·   Letzte G-Taste: {key}", bank=state["bank"], key=state["last_g_key"] or "—"))
         bank, key = self.macroTarget()
         macro = self.macros.store.get(bank, key)
-        summary = f"{macro.name} · {len(macro.events)} Ereignisse · {sum(e.delay for e in macro.events):.1f} Sek." if macro else "noch kein Makro"
+        summary = self.tr("{name} · {count} Ereignisse · {seconds:.1f} Sek.", name=macro.name, count=len(macro.events), seconds=sum(e.delay for e in macro.events)) if macro else self.tr("noch kein Makro")
         self.bindingLabel.setStringValue_(f"{bank}/{key}: {summary}")
 
 

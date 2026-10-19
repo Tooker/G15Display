@@ -4,7 +4,7 @@ from pathlib import Path
 root = Path(SPECPATH)
 a = Analysis(
     [str(root / "app_entry.py")], pathex=[str(root)],
-    binaries=[], datas=[], hiddenimports=["hid"], hookspath=[], hooksconfig={},
+    binaries=[], datas=[(str(path), path.name) for path in sorted((root / "assets" / "localizations").glob("*.lproj"))], hiddenimports=["hid"], hookspath=[], hooksconfig={},
     runtime_hooks=[], excludes=["tkinter", "numpy", "matplotlib", "IPython"],
     noarchive=False,
 )
@@ -21,11 +21,13 @@ app = BUNDLE(
     bundle_identifier="local.g15display.app",
     info_plist={
         "CFBundleDisplayName": "G15 Display",
-        "CFBundleShortVersionString": "1.0.0",
-        "CFBundleVersion": "100",
+        "CFBundleShortVersionString": "1.1.0",
+        "CFBundleVersion": "110",
+        "CFBundleDevelopmentRegion": "en",
+        "CFBundleLocalizations": ["en", "es", "fr", "de"],
         "LSUIElement": True,
         "NSHighResolutionCapable": True,
-        "NSAppleEventsUsageDescription": "Zeigt Titel aus Spotify und Music auf deiner G15 an und steuert die Wiedergabe über die Displaytasten.",
-        "NSInputMonitoringUsageDescription": "Erfasst Tastaturfolgen nur während einer von dir gestarteten Makroaufnahme und liest G15-Sondertasten.",
+        "NSAppleEventsUsageDescription": "Shows Spotify and Music tracks on your G15 and controls playback using the display buttons.",
+        "NSInputMonitoringUsageDescription": "Captures keyboard sequences only during a macro recording you start and reads G15 special keys.",
     },
 )

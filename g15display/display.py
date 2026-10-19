@@ -8,6 +8,7 @@ from PIL import Image
 
 from .keys import KeyEvent, KeyTracker
 from .device_lock import DeviceBusy, DeviceLease
+from .i18n import Message
 
 WIDTH, HEIGHT = 160, 43
 VENDOR_ID, PRODUCT_ID = 0x046D, 0xC222
@@ -26,7 +27,7 @@ def encode_report(image: Image.Image) -> bytes:
     The five unused bits in the last band remain zero.
     """
     if image.size != (WIDTH, HEIGHT):
-        raise ValueError(f"Das Bild muss {WIDTH} × {HEIGHT} Pixel groß sein.")
+        raise ValueError(Message("Das Bild muss {width} × {height} Pixel groß sein.", dict(width=WIDTH, height=HEIGHT)))
     pixels = image.convert("1", dither=Image.Dither.NONE).load()
     report = bytearray(REPORT_SIZE)
     report[0] = REPORT_ID
@@ -108,7 +109,7 @@ class G15:
             return self._open()
         except DeviceBusy as exc:
             self.close()
-            raise G15Error(str(exc)) from exc
+            raise G15Error(*exc.args) from exc
         except Exception:
             self.close()
             raise
@@ -125,9 +126,9 @@ class G15:
                 details = _darwin_library(hid.__file__).hid_error(None) or details
             device.close()
             raise G15Error(
-                "G15 lässt sich nicht öffnen. Andere Display-Programme schließen; "
-                "falls macOS den Zugriff verweigert, die Eingabeüberwachung für "
-                f"das startende Terminal bzw. Codex prüfen. Details: {details}"
+                Message("G15 lässt sich nicht öffnen. Andere Display-Programme schließen; "
+                        "falls macOS den Zugriff verweigert, die Eingabeüberwachung für "
+                        "das startende Terminal bzw. Codex prüfen. Details: {details}", dict(details=details))
             ) from exc
         self._device = device
         self._keys = KeyTracker()
@@ -146,7 +147,7 @@ class G15:
         try:
             report = bytes(self._device.read(9, timeout_ms))
         except OSError as exc:
-            raise G15Error(f"Lesen der G15-Tasten fehlgeschlagen: {exc}") from exc
+            raise G15Error(Message("Lesen der G15-Tasten fehlgeschlagen: {details}", dict(details=str(exc)))) from exc
         return self._keys.update(report)
 
     def show(self, image: Image.Image):
@@ -156,9 +157,9 @@ class G15:
         try:
             written = self._device.write(report)
         except OSError as exc:
-            raise G15Error(f"Display-Übertragung fehlgeschlagen: {exc}") from exc
+            raise G15Error(Message("Display-Übertragung fehlgeschlagen: {details}", dict(details=str(exc)))) from exc
         if written != len(report):
-            raise G15Error(f"Display-Übertragung unvollständig: {written}/{len(report)} Bytes.")
+            raise G15Error(Message("Display-Übertragung unvollständig: {written}/{total} Bytes.", dict(written=written, total=len(report))))
 
     def __exit__(self, *_):
         self.close()

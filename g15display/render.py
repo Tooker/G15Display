@@ -7,6 +7,7 @@ from PIL import Image, ImageDraw
 
 from .display import WIDTH, HEIGHT
 from .pixelfont import SMALL, LARGE
+from .i18n import normalize_language
 
 
 def text_screen(text: str) -> Image.Image:
@@ -21,14 +22,14 @@ def text_screen(text: str) -> Image.Image:
     return image
 
 
-def clock_screen(now: datetime | None = None) -> Image.Image:
+def clock_screen(now: datetime | None = None, *, language="de") -> Image.Image:
     now = now or datetime.now().astimezone()
     image = Image.new("1", (WIDTH, HEIGHT))
     draw = ImageDraw.Draw(image)
     SMALL.draw(draw, (1, 1), "LOGITECH G15")
     draw.line((0, 11, WIDTH - 1, 11), fill=1)
     LARGE.draw(draw, (1, 14), now.strftime("%H:%M:%S"))
-    SMALL.draw(draw, (1, 34), now.strftime("%d.%m.%Y"))
+    SMALL.draw(draw, (1, 34), now.strftime("%d.%m.%Y" if normalize_language(language) == "de" else "%d/%m/%Y"))
     return image
 
 
