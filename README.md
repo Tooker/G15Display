@@ -45,6 +45,80 @@ und Wiederverbinden laufen getrennt davon. Die Gerätesperre wird auch von
 den aktualisierten Kommandozeilenprogrammen verwendet.
 Fehler der App werden in `~/Library/Logs/G15 Display.log` protokolliert.
 
+### G-Tasten und Makroaufnahme (Version 0.2)
+
+Im Hauptfenster **G-Tasten …** oder in der Menüleiste **G-Tasten / Makros …**
+öffnen. Das Makrofenster ermöglicht:
+
+1. Bank **M1–M3** und Ziel **G1–G18** wählen, optional einen Namen eingeben.
+2. **Aufnehmen** drücken. Nach drei Sekunden beginnt die Aufnahme; in dieser
+   Zeit zum gewünschten Zielprogramm wechseln.
+3. Die gewünschte Tastenfolge einschließlich Tastenkombinationen eingeben.
+4. **Stoppen** oder die echte **MR-Taste** drücken. Die Aufnahme wird der
+   ausgewählten G-Taste zugeordnet und lokal gespeichert.
+5. Die G-Taste löst das Makro im gerade aktiven Programm aus. **Testen** gibt
+   ebenfalls drei Sekunden Zeit, zuerst das Zielprogramm zu aktivieren.
+
+Während der Aufnahme stehen ein roter Hinweis im Makrofenster und **● REC**
+in der Menüleiste. Es werden ausschließlich Tastaturereignisse erfasst, keine
+Mausbewegungen. Außerhalb einer ausdrücklich gestarteten Aufnahme wird kein
+globaler Tastatur-Listener installiert. Maximal 60 Sekunden beziehungsweise
+500 Ereignisse werden aufgezeichnet. Abbrechen durch Schließen des Makrofensters,
+leere oder vom System unterbrochene Aufnahmen ersetzen das bisherige Makro nicht.
+Während einer Aufnahme werden keine G-Tasten-Makros wiedergegeben.
+
+Zum Aufnehmen benötigt **G15 Display** die macOS-**Eingabeüberwachung**;
+zum Wiedergeben die **Bedienungshilfen**. Die beiden Freigabe-Schaltflächen
+öffnen die entsprechenden Systemeinstellungen. Nach einer neuen Freigabe kann
+ein Neustart der App nötig sein. Die App erteilt sich keine Berechtigung selbst.
+
+**MR stoppt auch eine laufende oder angekündigte Wiedergabe.** Beim Abbruch
+werden von der Wiedergabe noch gehaltene Tasten freigegeben. Eine zweite
+Wiedergabe wird während einer laufenden nicht zusätzlich gestartet. Eigene
+Wiedergabeereignisse sind markiert und werden nicht wieder aufgenommen.
+
+Die echte M1/M2/M3-Taste oder die Bankauswahl im Makrofenster aktiviert die
+jeweilige Bank. Die M-LEDs werden noch nicht synchronisiert. Bestehende
+G-Tasten-Belegungen anderer Programme werden nicht entfernt und können
+parallel reagieren.
+
+Makros liegen unter
+`~/Library/Application Support/G15 Display/macros.json`, mit lokalen Dateirechten
+und atomarem Speichern. Eine beschädigte Datei wird nicht überschrieben.
+Die Datei enthält Tastencodes, Zusatztasten und Zeitabstände und wird nicht
+ins Git-Repository aufgenommen. Aufnahmen sind mit dem Betriebssystem markiert;
+ein macOS-Makro wird nicht mit falschen Tastencodes unter Windows abgespielt.
+
+## Windows-Kompatibilität
+
+**Die aktuelle App ist eine macOS-App und läuft nicht unverändert unter Windows.**
+Der Python-HIDAPI-Wrapper unterstützt Windows, Linux und macOS:
+[Projektbeschreibung](https://github.com/trezor/cython-hidapi).
+Unser Bildformat, die Pixelschrift, Timer und der G15-Tastendecoder sind
+weitgehend unabhängig vom Betriebssystem. Für einen Windows-Port fehlen:
+
+| Bestandteil | Aktuell | Für Windows nötig |
+| --- | --- | --- |
+| Oberfläche | Cocoa/PyObjC | Windows-kompatible Oberfläche |
+| Makroaufnahme/Wiedergabe | Quartz | Windows-eigene Tastatur-Anbindung |
+| Gerätesperre | `fcntl` | Windows-kompatible Sperre |
+| Netzwerkinterface | `/sbin/route` | Windows-Routenauswahl |
+| Musikanzeige | AppleScript | Windows-Player-/Medienanbindung |
+| App-Paket | arm64 `.app` | Eigenständiger Build auf Windows |
+
+USB-Reports und G-Tasten müssen dort zusätzlich am Gerät geprüft werden,
+insbesondere neben installierter Logitech-Software. Es wurde noch kein
+Windows-Hardwaretest durchgeführt. PyInstaller erzeugt eine Windows-EXE auf
+Windows und ist kein Cross-Compiler:
+[PyInstaller-Dokumentation](https://pyinstaller.org/en/stable/).
+
+## Git
+
+Lokales Repository mit Hauptzweig `main`. Quellen, Tests, Dokumentation und
+Build-Anleitung sind versioniert. Python-Umgebung, App-Builds, Vorschauen,
+lokale Konfiguration und Logs sind ausgeschlossen. Ein GitHub-Remote wurde
+nicht eingerichtet.
+
 ## Starten
 
 Im Projektordner einmalig eine lokale Python-Umgebung anlegen und installieren:
@@ -281,7 +355,8 @@ neu starten. Der Prototyp installiert keinen Systemtreiber und benötigt kein su
 
 Nach Abziehen der Tastatur beendet sich eine laufende Übertragung mit einer
 Fehlermeldung. Nach erneutem Anschließen das Programm neu starten.
-Makrobelegungen, Helligkeit und Autostart sind noch nicht implementiert.
+Makrobelegungen sind in der macOS-App verfügbar. Helligkeit und Autostart
+sind noch nicht implementiert.
 Ein erfolgreicher Schreibaufruf bestätigt die USB-Übertragung; die tatsächliche
 Darstellung muss zusätzlich am physischen Display geprüft werden.
 
@@ -294,7 +369,7 @@ Die PNG-Vorschau wurde visuell geprüft; die Textdarstellung auf dem physischen
 LCD wurde vom Nutzer bestätigt. Im anschließenden Live-Tastentest wurden
 Drücken und Loslassen von L2–L5 sowie G1–G5, G7–G10 und G12–G18 empfangen.
 Die übrigen Tasten sind anhand des Protokolls implementiert und noch nicht
-einzeln am Gerät bestätigt. Alle 44 automatischen Tests bestehen, einschließlich
+einzeln am Gerät bestätigt. Alle 54 automatischen Tests bestehen, einschließlich
 Menünavigation, Timer/Pomodoro, Hintergrundlauf bei Seitenwechsel, Datenquellen
 und Fehlerbehandlung. Limits, lokale Aufgabenmetadaten und Netzwerkdaten wurden
 live abgerufen. Nach der macOS-Freigabe lieferte Spotify den pausierten Titel,
@@ -303,7 +378,12 @@ Apple-Music-Titel und die Play/Pause-Steuerung sind noch nicht live bestätigt;
 beim Test wurde keine Wiedergabe verändert. Die gebündelte App wurde geöffnet:
 Vorschau, echte Datenquellen und die G15-Verbindung sind aktiv. Der Pakettest
 bestätigt arm64, gebündelte Python-Laufzeit, HIDAPI 0.15.0 und 992-Byte-Reports;
-die lokale Codesignatur wurde geprüft. Die Menüansichten sind unter
+die lokale Codesignatur wurde geprüft. Die Makrotests prüfen zusätzlich
+Profilpersistenz, getrennte M-Bänke, Start/Stopp, Abbruch mit Tastenfreigabe,
+Plattformkennzeichnung und Aufnahmefreigaben mit simulierten Tastaturereignissen.
+Das native Makrofenster und das anschließende reguläre Beenden wurden geprüft.
+Eine echte Aufnahme mit vom Nutzer erteilten macOS-Freigaben ist noch separat
+zu bestätigen. Die Menüansichten sind unter
 `previews/dashboard.png` zusammengefasst.
 USB-Zugriff war aus der Codex-Sandbox gesperrt; der Hardwaretest lief mit
 freigegebenem Gerätezugriff. Bei eigenen Tests das Programm im Terminal starten.

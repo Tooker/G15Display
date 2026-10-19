@@ -21,11 +21,11 @@ app = BUNDLE(
     bundle_identifier="local.g15display.app",
     info_plist={
         "CFBundleDisplayName": "G15 Display",
-        "CFBundleShortVersionString": "0.1.0",
-        "CFBundleVersion": "1",
+        "CFBundleShortVersionString": "0.2.0",
+        "CFBundleVersion": "2",
         "LSUIElement": True,
         "NSHighResolutionCapable": True,
         "NSAppleEventsUsageDescription": "Zeigt Titel aus Spotify und Music auf deiner G15 an und steuert die Wiedergabe über die Displaytasten.",
-        "NSInputMonitoringUsageDescription": "Liest die G- und Displaytasten deiner Logitech G15.",
+        "NSInputMonitoringUsageDescription": "Erfasst Tastaturfolgen nur während einer von dir gestarteten Makroaufnahme und liest G15-Sondertasten.",
     },
 )

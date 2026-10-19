@@ -50,7 +50,7 @@ def legacy_menu_running():
 
 class AppController:
     def __init__(self, settings=None, *, page="clock", sources=None, device_factory=G15,
-                 legacy_check=legacy_menu_running, clock=time.monotonic):
+                 legacy_check=legacy_menu_running, clock=time.monotonic, macros=None):
         self.settings = (settings or Settings()).validate()
         self.sources = sources or Sources()
         self.dashboard = Dashboard(self.sources, page=page, minutes=self.settings.minutes,
@@ -68,6 +68,21 @@ class AppController:
         self.revision = 0
         self.last_frame = None
         self.state = {}
+        self.macros = macros
+        self.bank = "M1"
+        self.last_g_key = None
+
+    def handle_key(self, event):
+        if event.name in ("M1", "M2", "M3") and event.pressed:
+            self.bank = event.name
+        if event.name in {f"G{i}" for i in range(1, 19)}:
+            if event.pressed:
+                self.last_g_key = event.name
+                if self.macros is not None:
+                    self.macros.trigger(self.bank, event.name)
+        elif event.name == "MR" and event.pressed and self.macros is not None:
+            self.macros.request_stop()
+        self.dashboard.handle(event)
 
     def start(self):
         self.thread = threading.Thread(target=self._run, name="g15-display", daemon=True)
@@ -109,8 +124,10 @@ class AppController:
                 self.dashboard.menu = False
                 self.dashboard.page_started = self.clock()
             elif action == "key":
-                self.dashboard.handle(KeyEvent(value, True))
-                self.dashboard.handle(KeyEvent(value, False))
+                self.handle_key(KeyEvent(value, True))
+                self.handle_key(KeyEvent(value, False))
+            elif action == "bank" and value in ("M1", "M2", "M3"):
+                self.bank = value
             elif action == "settings":
                 settings = value.validate()
                 self.settings = settings
@@ -134,7 +151,7 @@ class AppController:
         if self.device is not None:
             try:
                 for event in self.device.read_keys(timeout_ms=25):
-                    self.dashboard.handle(event)
+                    self.handle_key(event)
             except (G15Error, OSError) as exc:
                 self.error = str(exc)
                 self._disconnect()
@@ -155,6 +172,7 @@ class AppController:
             self.state = dict(image=image, revision=self.revision, connected=self.device is not None,
                               enabled=self.enabled, error=self.error, page=self.dashboard.page,
                               menu=self.dashboard.menu,
+                              bank=self.bank, last_g_key=self.last_g_key,
                               health={name: snapshot.error for name, snapshot in self.sources.snapshots.items()})
 
     def _run(self):

@@ -12,6 +12,7 @@ from PIL import Image
 
 from .app_controller import AppController, Settings
 from .dashboard import PAGES
+from .macos_macros import MacMacroService
 
 PAGE_NAMES = ("Uhr", "Codex-Limits", "Laufende Codex-Aufgaben", "Timer", "Pomodoro", "Musik", "Netzwerk")
 
@@ -25,7 +26,10 @@ class G15Application(A.NSObject):
                                 self.defaults.doubleForKey_("rest"), self.defaults.integerForKey_("rounds")).validate()
         except ValueError:
             settings = Settings()
-        self.controller = AppController(settings)
+        self.macros = MacMacroService()
+        self.controller = AppController(settings, macros=self.macros)
+        self.macroWindow = None
+        self.lastGShown = None
         self.quitting = False
         self.revision = -1
         self.buildMenus()
@@ -33,6 +37,8 @@ class G15Application(A.NSObject):
         self.controller.start()
         self.refreshTimer = F.NSTimer.scheduledTimerWithTimeInterval_target_selector_userInfo_repeats_(
             0.25, self, "refresh:", None, True)
+        # NSTerminateLater uses the modal run loop; keep the shutdown check alive.
+        F.NSRunLoop.mainRunLoop().addTimer_forMode_(self.refreshTimer, F.NSRunLoopCommonModes)
         self.showWindow_(None)
 
     @objc.python_method
@@ -46,6 +52,9 @@ class G15Application(A.NSObject):
         menu = A.NSMenu.alloc().init()
         menu.setAutoenablesItems_(False)
         menu.addItem_(self.item("G15 Display anzeigen", "showWindow:"))
+        menu.addItem_(self.item("G-Tasten / Makros …", "showMacros:"))
+        self.stopMacroItem = self.item("Aufnahme / Wiedergabe stoppen", "stopMacro:")
+        menu.addItem_(self.stopMacroItem)
         self.outputItem = self.item("Display trennen", "toggleOutput:")
         menu.addItem_(self.outputItem)
         menu.addItem_(A.NSMenuItem.separatorItem())
@@ -105,11 +114,12 @@ class G15Application(A.NSObject):
             button = self.button(title, "pressButton:", ((24 + index * 166, 235), (142, 32)))
             button.setTag_(index)
             self.lcdButtons.append(button)
-        self.pagePopup = A.NSPopUpButton.alloc().initWithFrame_pullsDown_(((24, 192), (300, 30)), False)
+        self.pagePopup = A.NSPopUpButton.alloc().initWithFrame_pullsDown_(((24, 192), (250, 30)), False)
         self.pagePopup.addItemsWithTitles_(PAGE_NAMES)
         self.pagePopup.setTarget_(self)
         self.pagePopup.setAction_("changePage:")
         self.window.contentView().addSubview_(self.pagePopup)
+        self.button("G-Tasten …", "showMacros:", ((286, 192), (144, 32)))
         self.connectButton = self.button("Verbinden", "connect:", ((442, 192), (105, 32)))
         self.disconnectButton = self.button("Trennen", "disconnect:", ((557, 192), (107, 32)))
         self.label("Timer & Pomodoro", ((24, 156), (400, 22)), size=15)
@@ -133,6 +143,8 @@ class G15Application(A.NSObject):
         A.NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
 
     def windowShouldClose_(self, sender):
+        if sender == self.macroWindow:
+            self.macros.close()
         sender.orderOut_(None)
         return False
 
@@ -181,9 +193,15 @@ class G15Application(A.NSObject):
                 timer.invalidate()
                 A.NSApplication.sharedApplication().replyToApplicationShouldTerminate_(True)
             return
+        self.macros.tick()
+        macro_state = self.macros.snapshot()
+        self.stopMacroItem.setEnabled_(macro_state["recording"] or macro_state["playing"])
+        self.statusItem.button().setTitle_("● REC" if macro_state["recording"] else "G15")
         state = self.controller.snapshot()
         if not state:
             return
+        if self.macroWindow is not None:
+            self.refreshMacros(state, macro_state)
         if state["connected"]:
             status = "G15 verbunden · Display und Tasten sind aktiv"
         elif not state["enabled"]:
@@ -217,9 +235,139 @@ class G15Application(A.NSObject):
 
     def applicationShouldTerminate_(self, app):
         self.quitting = True
-        self.connectionLabel.setStringValue_("G15 Display wird beendet …")
         self.controller.stop()
+        self.macros.shutdown()
+        self.connectionLabel.setStringValue_("G15 Display wird beendet …")
         return A.NSTerminateLater if self.controller.alive else A.NSTerminateNow
+
+    @objc.python_method
+    def macroLabel(self, text, frame, size=13):
+        label = A.NSTextField.wrappingLabelWithString_(text)
+        label.setFrame_(frame)
+        label.setFont_(A.NSFont.systemFontOfSize_(size))
+        self.macroWindow.contentView().addSubview_(label)
+        return label
+
+    @objc.python_method
+    def macroButton(self, title, action, frame):
+        button = A.NSButton.buttonWithTitle_target_action_(title, self, action)
+        button.setFrame_(frame)
+        self.macroWindow.contentView().addSubview_(button)
+        return button
+
+    def showMacros_(self, sender):
+        if self.macroWindow is None:
+            style = A.NSWindowStyleMaskTitled | A.NSWindowStyleMaskClosable
+            self.macroWindow = A.NSWindow.alloc().initWithContentRect_styleMask_backing_defer_(
+                ((0, 0), (688, 450)), style, A.NSBackingStoreBuffered, False)
+            self.macroWindow.setTitle_("G-Tasten & Makros")
+            self.macroWindow.setReleasedWhenClosed_(False)
+            self.macroWindow.setDelegate_(self)
+            self.macroWindow.center()
+            self.macroLabel("G-Tasten & Makros", ((24, 398), (430, 32)), size=23)
+            self.macroStatus = self.macroLabel(self.macros.message, ((24, 342), (640, 48)))
+            self.macroLabel("Bank", ((24, 322), (100, 18)), size=12)
+            self.macroLabel("G-Taste", ((144, 322), (100, 18)), size=12)
+            self.macroLabel("Name für die neue Aufnahme", ((264, 322), (400, 18)), size=12)
+            self.bankPopup = A.NSPopUpButton.alloc().initWithFrame_pullsDown_(((24, 286), (100, 30)), False)
+            self.bankPopup.addItemsWithTitles_(("M1", "M2", "M3"))
+            self.bankPopup.setTarget_(self)
+            self.bankPopup.setAction_("macroBank:")
+            self.macroWindow.contentView().addSubview_(self.bankPopup)
+            self.gPopup = A.NSPopUpButton.alloc().initWithFrame_pullsDown_(((144, 286), (100, 30)), False)
+            self.gPopup.addItemsWithTitles_([f"G{i}" for i in range(1, 19)])
+            self.gPopup.setTarget_(self)
+            self.gPopup.setAction_("macroKey:")
+            self.macroWindow.contentView().addSubview_(self.gPopup)
+            self.macroName = A.NSTextField.alloc().initWithFrame_(((264, 288), (400, 25)))
+            self.macroName.setPlaceholderString_("Zum Beispiel: Textbaustein")
+            self.macroWindow.contentView().addSubview_(self.macroName)
+            self.recordButton = self.macroButton("Aufnehmen", "recordMacro:", ((24, 236), (145, 32)))
+            self.stopButton = self.macroButton("Stoppen", "stopMacro:", ((189, 236), (145, 32)))
+            self.testButton = self.macroButton("Testen (3 Sek.)", "testMacro:", ((354, 236), (145, 32)))
+            self.deleteButton = self.macroButton("Makro löschen", "deleteMacro:", ((519, 236), (145, 32)))
+            self.bindingLabel = self.macroLabel("Noch kein Makro gespeichert.", ((24, 208), (640, 22)))
+            self.macroLabel("Aufnehmen startet nach 3 Sekunden. Wechsle dann zum Zielprogramm. "
+                            "Während der Aufnahme werden Tastendrücke systemweit erfasst. "
+                            "Stoppen oder die MR-Taste beendet die Aufnahme.", ((24, 148), (640, 56)))
+            self.lastKeyLabel = self.macroLabel("Letzte G-Taste: —", ((24, 114), (640, 22)))
+            self.macroButton("Aufnahme freigeben …", "recordAccess:", ((24, 65), (300, 32)))
+            self.macroButton("Wiedergabe freigeben …", "playAccess:", ((344, 65), (320, 32)))
+            self.macroLabel("Maximal 60 Sekunden / 500 Ereignisse. MR stoppt auch eine Wiedergabe. "
+                            "Fenster schließen verwirft eine laufende Aufnahme.", ((24, 18), (640, 36)), size=11)
+            self.bankPopup.selectItemWithTitle_(self.controller.snapshot().get("bank", "M1"))
+            self.macroKey_(None)
+        self.macroWindow.makeKeyAndOrderFront_(None)
+        A.NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
+
+    @objc.python_method
+    def macroTarget(self):
+        return str(self.bankPopup.titleOfSelectedItem()), str(self.gPopup.titleOfSelectedItem())
+
+    def macroBank_(self, sender):
+        self.controller.submit("bank", self.bankPopup.titleOfSelectedItem())
+        self.macroKey_(None)
+
+    def macroKey_(self, sender):
+        self.shownMacroTarget = self.macroTarget()
+        macro = self.macros.store.get(*self.macroTarget())
+        self.macroName.setStringValue_(macro.name if macro else "")
+
+    def recordMacro_(self, sender):
+        bank, key = self.macroTarget()
+        self.macros.arm(bank, key, str(self.macroName.stringValue()))
+
+    def stopMacro_(self, sender):
+        self.macros.stop()
+        self.macros.request_stop()
+
+    def testMacro_(self, sender):
+        self.macros.test(*self.macroTarget())
+
+    def deleteMacro_(self, sender):
+        try:
+            self.macros.store.set(*self.macroTarget(), None)
+            self.macros.message = "Makro gelöscht."
+            self.macroName.setStringValue_("")
+        except (ValueError, OSError) as exc:
+            self.macros.message = str(exc)
+
+    def recordAccess_(self, sender):
+        import Quartz as Q
+        Q.CGRequestListenEventAccess()
+        self.openPermissions_(None)
+
+    def playAccess_(self, sender):
+        import Quartz as Q
+        Q.CGRequestPostEventAccess()
+        A.NSWorkspace.sharedWorkspace().openURL_(F.NSURL.URLWithString_(
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"))
+
+    @objc.python_method
+    def refreshMacros(self, state, recording):
+        self.macroStatus.setStringValue_(recording["message"])
+        self.macroStatus.setTextColor_(A.NSColor.systemRedColor() if recording["recording"] else A.NSColor.labelColor())
+        self.recordButton.setEnabled_(not recording["recording"] and not recording["playing"])
+        self.stopButton.setEnabled_(recording["recording"] or recording["playing"])
+        self.testButton.setEnabled_(not recording["recording"] and not recording["playing"])
+        self.deleteButton.setEnabled_(not recording["recording"] and not recording["playing"])
+        self.bankPopup.setEnabled_(not recording["recording"])
+        self.gPopup.setEnabled_(not recording["recording"])
+        self.macroName.setEnabled_(not recording["recording"])
+        if not recording["recording"]:
+            self.bankPopup.selectItemWithTitle_(state["bank"])
+            if state["last_g_key"] != self.lastGShown:
+                self.lastGShown = state["last_g_key"]
+                if self.lastGShown:
+                    self.gPopup.selectItemWithTitle_(self.lastGShown)
+                    self.macroKey_(None)
+            if self.macroTarget() != self.shownMacroTarget:
+                self.macroKey_(None)
+        self.lastKeyLabel.setStringValue_(f"Aktive Bank: {state['bank']}   ·   Letzte G-Taste: {state['last_g_key'] or '—'}")
+        bank, key = self.macroTarget()
+        macro = self.macros.store.get(bank, key)
+        summary = f"{macro.name} · {len(macro.events)} Ereignisse · {sum(e.delay for e in macro.events):.1f} Sek." if macro else "noch kein Makro"
+        self.bindingLabel.setStringValue_(f"{bank}/{key}: {summary}")
 
 
 def main():

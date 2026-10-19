@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "g15display"
-version = "0.1.0"
+version = "0.2.0"
 description = "Python-Prototyp für das Display der ursprünglichen Logitech G15"
 requires-python = ">=3.10"
 dependencies = ["hidapi>=0.14,<0.16", "Pillow>=10.1,<14", "psutil>=6,<9"]
@@ -13,7 +13,7 @@ dependencies = ["hidapi>=0.14,<0.16", "Pillow>=10.1,<14", "psutil>=6,<9"]
 g15 = "g15display.__main__:main"
 
 [project.optional-dependencies]
-app = ["pyobjc-framework-Cocoa>=11,<13; sys_platform == 'darwin'", "pyinstaller>=6.16,<7"]
+app = ["pyobjc-framework-Cocoa>=11,<13; sys_platform == 'darwin'", "pyobjc-framework-Quartz>=11,<13; sys_platform == 'darwin'", "pyinstaller>=6.16,<7"]
 
 [project.gui-scripts]
 g15-app = "g15display.macos_app:main"
