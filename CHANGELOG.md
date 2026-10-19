@@ -11,7 +11,11 @@
   changing language.
 - Add `--language en|es|fr|de` to command-line tools and localized macOS
   permission descriptions. The documentation remains in English.
-- Add nine localization tests, bringing the automated suite to 63 tests.
+- Add a read-only physical G15 typing-key test, defaulting to Backspace, with
+  press/release counts, hold durations, rapid repress clues, and a manual
+  ten-press reference. Invalid reports and disconnects are treated as incomplete
+  measurements. No typed text or ordered key log is saved.
+- Add localization and typing-key tests, bringing the automated suite to 75 tests.
 
 ## 1.0.0 – 2026-10-19
 

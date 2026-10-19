@@ -103,6 +103,42 @@ contains keycodes, modifier flags, and timing, and is not included in Git.
 Recordings carry a platform identifier; a macOS macro will not play on Windows
 using incompatible keycodes.
 
+## Testing normal typing keys
+
+Open **Key test …** from the main window or the menu bar. This separate test
+reads the physical G15 v1 typing interface (`046d:c221`, interface 0), including
+letters, numbers, function keys, modifiers, and Backspace. It is independent of
+the G-key reader and excludes virtual keyboards and other connected keyboards.
+The default test key is **Backspace ⌫**.
+
+1. Release all keys and select the key to test.
+2. Click **Start**, then slowly press and fully release that key exactly ten times.
+3. Click **I pressed ten times – evaluate**. The test stops and compares your
+   reference count with the USB press/release count.
+
+The display shows presses, releases, current/last received state, hold duration,
+and rapid represses within 50 ms. Holding a key or receiving an identical report
+does not count as another press. Raw USB states do not include macOS-generated
+key repeat. A long hold is highlighted after two seconds, but only you can confirm
+whether the physical key has already been released.
+
+Rapid represses are timing clues, not proof of switch bounce. A count mismatch
+is meaningful only if you really pressed exactly ten times; it does not identify
+whether the cause is the key, keyboard electronics, or connection. A missed
+physical press cannot be inferred from silence alone. Ten successful presses do
+not rule out intermittent dropouts. Invalid reports, rollover, and connection
+errors make the measurement incomplete rather than reporting a faulty key.
+
+Access is shared and read-only; no LED settings or keyboard configuration are
+written. The actual HID report descriptor must match the verified G15 format
+before measurement starts. Input Monitoring permission may be needed. Only
+aggregate state/counts for the selected key are retained in memory; no typed text
+or ordered key log is saved. Stop, closing the test window, quitting, or the
+two-minute limit ends measurement. Stopped values describe the last received
+state, not a live keyboard state. Changing the test key or starting again resets
+the counters. USB key names describe positions; Y/Z differ between US and German
+layouts, as noted in the selector.
+
 ## Windows compatibility
 
 **The current app is for macOS and does not run unchanged on Windows.**
@@ -338,9 +374,10 @@ existing mappings in other programs may still respond in parallel.
 
 ## USB and macOS
 
-The controller uses `hidapi` (Python import `hid`) and Pillow. It addresses only
-**046d:c222**, the G15 v1 display/special-key device. The normal keyboard device
-**046d:c221** is not opened.
+The controller uses `hidapi` (Python import `hid`) and Pillow. The display controller addresses only
+**046d:c222**, the G15 v1 display/special-key device. The separate, explicitly
+started typing-key diagnostic opens **046d:c221**, interface 0, read-only in
+shared mode.
 
 On macOS, shared access is enabled through HIDAPI's public
 `hid_darwin_set_open_exclusive(0)` function. The Python wrapper does not expose
@@ -379,7 +416,7 @@ text on the physical LCD. A subsequent live key test received press and release
 events for L2–L5, G1–G5, G7–G10, and G12–G18. Other keys follow the protocol
 mapping but have not each been confirmed on hardware.
 
-All 63 automated tests pass, covering menu navigation, timers/Pomodoro,
+All 75 automated tests pass, covering menu navigation, timers/Pomodoro,
 background operation while switching pages, data sources, and error handling.
 Limits, local task metadata, and network data were retrieved live. After macOS
 permission was granted, Spotify returned the paused title, position, and duration;
@@ -401,8 +438,12 @@ permissions remains outstanding.
 
 `scripts/preview_menu.py` generates the combined page preview at
 `previews/dashboard.png`. During development, the Codex sandbox blocked USB
-access, so hardware tests ran with approved device access. For your own tests,
-run the commands in Terminal.
+access, so hardware tests ran with approved device access. For your own command-line tests,
+run the commands in Terminal. The typing-key diagnostic also verifies the
+physical keyboard descriptor and covers report decoding, count comparisons,
+duplicate reports, hold durations, rollover gaps, connection failures, and cleanup
+in automated tests. A ten-press Backspace test on hardware still requires the
+user to supply the physical presses.
 
 ```sh
 .venv/bin/python -m unittest discover -s tests -v

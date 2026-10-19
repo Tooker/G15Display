@@ -65,7 +65,7 @@ class TranslationTests(unittest.TestCase):
             for node in ast.walk(tree):
                 source = None
                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-                    if node.func.attr in ("label", "macroLabel", "button", "macroButton", "item", "tr") and node.args:
+                    if node.func.attr in ("label", "macroLabel", "button", "macroButton", "testLabel", "testButton", "item", "tr") and node.args:
                         source = node.args[0]
                     elif node.func.attr == "localize" and len(node.args) == 3:
                         source = node.args[2]

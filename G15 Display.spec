@@ -28,6 +28,6 @@ app = BUNDLE(
         "LSUIElement": True,
         "NSHighResolutionCapable": True,
         "NSAppleEventsUsageDescription": "Shows Spotify and Music tracks on your G15 and controls playback using the display buttons.",
-        "NSInputMonitoringUsageDescription": "Captures keyboard sequences only during a macro recording you start and reads G15 special keys.",
+        "NSInputMonitoringUsageDescription": "Captures keyboard sequences only during a macro recording you start and reads G15 special keys. Reads normal G15 key states only during a key test you start.",
     },
 )

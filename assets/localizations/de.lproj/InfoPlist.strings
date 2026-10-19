@@ -1,2 +1,2 @@
 "NSAppleEventsUsageDescription" = "Zeigt Titel aus Spotify und Music auf deiner G15 an und steuert die Wiedergabe über die Displaytasten.";
-"NSInputMonitoringUsageDescription" = "Erfasst Tastaturfolgen nur während einer von dir gestarteten Makroaufnahme und liest G15-Sondertasten.";
+"NSInputMonitoringUsageDescription" = "Erfasst Tastaturfolgen nur während einer von dir gestarteten Makroaufnahme und liest G15-Sondertasten. Liest normale G15-Tastenzustände nur während eines von dir gestarteten Tastentests.";

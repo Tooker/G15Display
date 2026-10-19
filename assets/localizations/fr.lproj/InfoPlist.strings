@@ -1,2 +1,2 @@
 "NSAppleEventsUsageDescription" = "Affiche les titres Spotify et Music sur votre G15 et contrôle la lecture avec les boutons de l’écran.";
-"NSInputMonitoringUsageDescription" = "Capture les séquences de touches uniquement pendant un enregistrement que vous lancez et lit les touches spéciales G15.";
+"NSInputMonitoringUsageDescription" = "Capture les séquences de touches uniquement pendant un enregistrement que vous lancez et lit les touches spéciales G15. Lit les états des touches normales G15 uniquement pendant un test que vous lancez.";

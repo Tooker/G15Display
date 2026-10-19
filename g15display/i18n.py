@@ -245,11 +245,43 @@ Uhr läuft. Beenden mit Strg+C.|Clock running. Stop with Ctrl+C.|Reloj activo. C
 Beendet.|Stopped.|Finalizado.|Arrêté.
 Fehler: {details}|Error: {details}|Error: {details}|Erreur : {details}
 Sprache|Language|Idioma|Langue
+Tastentest …|Key test …|Prueba de teclas …|Test des touches …
+Normale G15-Tasten prüfen|Test normal G15 keys|Probar teclas normales G15|Tester les touches normales G15
+Rücktaste ⌫|Backspace ⌫|Retroceso ⌫|Retour arrière ⌫
+Entf ⌦|Delete ⌦|Suprimir ⌦|Supprimer ⌦
+Leertaste|Space|Espacio|Espace
+Enter|Enter|Intro|Entrée
+Start|Start|Iniciar|Démarrer
+Zurücksetzen|Reset|Reiniciar|Réinitialiser
+Alle Tasten loslassen, Start drücken. Dann die Prüftaste genau zehnmal langsam drücken und jeweils ganz loslassen. Danach auswerten. Gemessen wird nur die physische G15; Texte werden nicht gespeichert.|Release all keys and press Start. Press the selected key slowly exactly ten times, releasing it fully each time, then evaluate. Only the physical G15 is measured; typed text is not saved.|Suelta todas las teclas y pulsa Iniciar. Pulsa la tecla elegida exactamente diez veces despacio, soltándola por completo cada vez; luego evalúa. Solo se mide la G15 física; no se guarda texto.|Relâchez toutes les touches et cliquez sur Démarrer. Appuyez lentement dix fois sur la touche choisie, en la relâchant complètement à chaque fois, puis évaluez. Seul le G15 physique est mesuré ; aucun texte n'est enregistré.
+Ich habe zehnmal gedrückt – auswerten|I pressed ten times – evaluate|He pulsado diez veces – evaluar|J'ai appuyé dix fois – évaluer
+Langes Halten und schnelle Wiederbetätigung sind Hinweise, kein Defektbeweis. Außerhalb dieses Fensters kann die Taste weiterhin normal wirken. Schließen stoppt die Messung.|Long holds and rapid represses are clues, not proof of a fault. Outside this window, the key can still act normally. Closing stops measurement.|Las pulsaciones largas o rápidas son indicios, no pruebas de avería. Fuera de esta ventana la tecla sigue actuando normalmente. Cerrar detiene la medición.|Les appuis longs ou rapides sont des indices, pas des preuves de panne. Hors de cette fenêtre la touche reste active normalement. Fermer arrête la mesure.
+Unklar|Unknown|Desconocido|Inconnu
+Gedrückt|Pressed|Pulsada|Appuyée
+Losgelassen|Released|Suelta|Relâchée
+Drücken: {presses}    Loslassen: {releases}\nZustand: {state}    Gemeldete Haltedauer: {duration:.2f} s\nLängste Haltedauer: {max_hold:.2f} s\nSchnelle Wiederbetätigungen (≤ 50 ms): {rapid}\nUngültige/Rollover-Meldungen: {problems}|Presses: {presses}    Releases: {releases}\nState: {state}    Reported hold: {duration:.2f} s\nLongest hold: {max_hold:.2f} s\nRapid represses (≤ 50 ms): {rapid}\nInvalid/rollover reports: {problems}|Pulsaciones: {presses}    Liberaciones: {releases}\nEstado: {state}    Duración indicada: {duration:.2f} s\nMayor duración: {max_hold:.2f} s\nRepeticiones rápidas (≤ 50 ms): {rapid}\nInformes no válidos/rollover: {problems}|Appuis : {presses}    Relâchements : {releases}\nÉtat : {state}    Durée signalée : {duration:.2f} s\nAppui le plus long : {max_hold:.2f} s\nRéappuis rapides (≤ 50 ms) : {rapid}\nRapports invalides/rollover : {problems}
+Ungültige Tastaturmeldung; bitte Test wiederholen.|Invalid keyboard report; please repeat the test.|Informe de teclado no válido; repite la prueba.|Rapport clavier invalide ; recommencez le test.
+Tastatur meldet Rollover/Fehler; bitte einzeln testen.|Keyboard reports rollover/error; test one key at a time.|El teclado indica rollover/error; prueba una tecla cada vez.|Le clavier signale un rollover/une erreur ; testez une touche à la fois.
+Bitte genau eine G15-v1-Tastatur anschließen (046d:c221).|Connect exactly one G15 v1 keyboard (046d:c221).|Conecta exactamente una G15 v1 (046d:c221).|Connectez un seul clavier G15 v1 (046d:c221).
+Unbekanntes Tastaturformat; keine verlässliche Messung möglich.|Unknown keyboard format; reliable measurement is unavailable.|Formato de teclado desconocido; no se puede medir con fiabilidad.|Format clavier inconnu ; mesure fiable impossible.
+Tastaturzugriff verweigert. Eingabeüberwachung prüfen und App neu starten.|Keyboard access denied. Check Input Monitoring and restart the app.|Acceso al teclado denegado. Revisa Monitorización de entrada y reinicia la app.|Accès clavier refusé. Vérifiez Surveillance de l'entrée et redémarrez l'app.
+Test bereit. Alle Tasten loslassen und Start drücken.|Test ready. Release all keys and press Start.|Prueba lista. Suelta todas las teclas y pulsa Iniciar.|Test prêt. Relâchez toutes les touches et cliquez sur Démarrer.
+Normale G15-Tastatur wird geöffnet …|Opening the normal G15 keyboard …|Abriendo el teclado normal G15 …|Ouverture du clavier normal G15 …
+Messung aktiv. Prüftaste zehnmal einzeln drücken und loslassen.|Measurement active. Press and release the selected key ten times.|Medición activa. Pulsa y suelta la tecla elegida diez veces.|Mesure active. Appuyez et relâchez la touche choisie dix fois.
+Tastaturverbindung unterbrochen; bitte Test wiederholen.|Keyboard connection interrupted; please repeat the test.|Conexión de teclado interrumpida; repite la prueba.|Connexion clavier interrompue ; recommencez le test.
+Messung gestoppt. Angezeigt wird der letzte empfangene Zustand.|Measurement stopped. Showing the last received state.|Medición detenida. Se muestra el último estado recibido.|Mesure arrêtée. Affichage du dernier état reçu.
+Messung unvollständig; daraus lässt sich kein Tastendefekt ableiten.|Measurement incomplete; it cannot establish a key fault.|Medición incompleta; no permite concluir un fallo de tecla.|Mesure incomplète ; elle ne permet pas de conclure à une panne.
+Erst zehnmal drücken, dann mit der Schaltfläche auswerten.|Press ten times, then use the button to evaluate.|Pulsa diez veces y luego usa el botón para evaluar.|Appuyez dix fois, puis utilisez le bouton pour évaluer.
+Keine Tastaturmeldung empfangen. Ursache noch unklar; Zugriff/Verbindung prüfen.|No keyboard report received. Cause unknown; check access/connection.|No se recibió ningún informe. Causa desconocida; revisa acceso/conexión.|Aucun rapport clavier reçu. Cause inconnue ; vérifiez accès/connexion.
+Loslassen fehlt. Falls die Taste physisch losgelassen ist, wurde kein passender USB-Zustand empfangen.|Release is missing. If the key is physically released, no matching USB state was received.|Falta la liberación. Si has soltado físicamente la tecla, no se recibió el estado USB correspondiente.|Relâchement manquant. Si la touche est physiquement relâchée, aucun état USB correspondant n'a été reçu.
+Zehn vollständige Betätigungen empfangen. Das schließt sporadische Aussetzer nicht aus.|Ten complete presses received. This does not rule out intermittent dropouts.|Diez pulsaciones completas recibidas. No descarta fallos intermitentes.|Dix appuis complets reçus. Cela n'exclut pas des ratés intermittents.
+Soll: {expected}, empfangen: {presses}. Bei genau zehn Betätigungen besteht eine Abweichung; Ursache noch offen.|Expected: {expected}, received: {presses}. If you pressed exactly ten times, there is a mismatch; cause unknown.|Esperadas: {expected}, recibidas: {presses}. Si pulsaste exactamente diez veces, hay una diferencia; causa desconocida.|Attendus : {expected}, reçus : {presses}. Si vous avez appuyé exactement dix fois, il y a un écart ; cause inconnue.
+Messung nach zwei Minuten automatisch gestoppt.|Measurement stopped automatically after two minutes.|Medición detenida automáticamente tras dos minutos.|Mesure arrêtée automatiquement après deux minutes.
 '''
 
 CATALOG = {}
 for _row in _ROWS.strip().splitlines():
-    _source, _en, _es, _fr = _row.split("|")
+    _source, _en, _es, _fr = (part.replace("\\n", "\n") for part in _row.split("|"))
     if _source in CATALOG:
         raise ValueError(f"Duplicate translation: {_source}")
     CATALOG[_source] = {"en": _en, "es": _es, "fr": _fr, "de": _source}

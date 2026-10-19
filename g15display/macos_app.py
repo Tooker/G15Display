@@ -14,6 +14,7 @@ from .app_controller import AppController, Settings
 from .dashboard import PAGES
 from .macos_macros import MacMacroService
 from .i18n import LANGUAGES, Translator
+from .keyboard_test import KEYS, KeyboardTest, result_message
 
 PAGE_NAMES = ("Uhr", "Codex-Limits", "Laufende Codex-Aufgaben", "Timer", "Pomodoro", "Musik", "Netzwerk")
 
@@ -34,6 +35,8 @@ class G15Application(A.NSObject):
             settings = Settings()
         self.macros = MacMacroService(language=self.tr.language)
         self.controller = AppController(settings, macros=self.macros, language=self.tr.language)
+        self.keyboardTest = KeyboardTest()
+        self.testWindow = None
         self.macroWindow = None
         self.lastGShown = None
         self.quitting = False
@@ -80,6 +83,7 @@ class G15Application(A.NSObject):
         menu.setAutoenablesItems_(False)
         menu.addItem_(self.item("G15 Display anzeigen", "showWindow:"))
         menu.addItem_(self.item("G-Tasten / Makros …", "showMacros:"))
+        menu.addItem_(self.item("Tastentest …", "showKeyboardTest:"))
         self.stopMacroItem = self.item("Aufnahme / Wiedergabe stoppen", "stopMacro:")
         menu.addItem_(self.stopMacroItem)
         self.outputItem = self.item("Display trennen", "toggleOutput:")
@@ -162,6 +166,7 @@ class G15Application(A.NSObject):
         self.connectButton = self.button("Verbinden", "connect:", ((442, 192), (105, 32)))
         self.disconnectButton = self.button("Trennen", "disconnect:", ((557, 192), (107, 32)))
         self.label("Timer & Pomodoro", ((24, 156), (400, 22)), size=15)
+        self.button("Tastentest …", "showKeyboardTest:", ((444, 151), (220, 30)))
         self.fields = []
         for index, (name, value) in enumerate(zip(("Timer (Min.)", "Arbeit (Min.)", "Pause (Min.)", "Runden"),
                                                  (settings.minutes, settings.work, settings.rest, settings.rounds))):
@@ -182,6 +187,8 @@ class G15Application(A.NSObject):
         A.NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
 
     def windowShouldClose_(self, sender):
+        if sender == self.testWindow:
+            self.keyboardTest.stop()
         if sender == self.macroWindow:
             self.macros.close()
         sender.orderOut_(None)
@@ -233,6 +240,8 @@ class G15Application(A.NSObject):
                 A.NSApplication.sharedApplication().replyToApplicationShouldTerminate_(True)
             return
         self.macros.tick()
+        if self.testWindow is not None:
+            self.refreshKeyboardTest()
         macro_state = self.macros.snapshot()
         self.stopMacroItem.setEnabled_(macro_state["recording"] or macro_state["playing"])
         self.statusItem.button().setTitle_("● REC" if macro_state["recording"] else "G15")
@@ -276,6 +285,7 @@ class G15Application(A.NSObject):
         self.quitting = True
         self.controller.stop()
         self.macros.shutdown()
+        self.keyboardTest.stop()
         self.connectionLabel.setStringValue_(self.tr("G15 Display wird beendet …"))
         return A.NSTerminateLater if self.controller.alive else A.NSTerminateNow
 
@@ -407,6 +417,98 @@ class G15Application(A.NSObject):
         macro = self.macros.store.get(bank, key)
         summary = self.tr("{name} · {count} Ereignisse · {seconds:.1f} Sek.", name=macro.name, count=len(macro.events), seconds=sum(e.delay for e in macro.events)) if macro else self.tr("noch kein Makro")
         self.bindingLabel.setStringValue_(f"{bank}/{key}: {summary}")
+
+    @objc.python_method
+    def testLabel(self, text, frame, size=13):
+        label = A.NSTextField.wrappingLabelWithString_(text)
+        label.setFrame_(frame)
+        label.setFont_(A.NSFont.systemFontOfSize_(size))
+        self.testWindow.contentView().addSubview_(label)
+        return self.localize(label, "setStringValue_", text)
+
+    @objc.python_method
+    def testButton(self, title, action, frame):
+        button = A.NSButton.buttonWithTitle_target_action_(title, self, action)
+        button.setFrame_(frame)
+        self.testWindow.contentView().addSubview_(button)
+        return self.localize(button, "setTitle_", title)
+
+    def showKeyboardTest_(self, sender):
+        if self.testWindow is None:
+            style = A.NSWindowStyleMaskTitled | A.NSWindowStyleMaskClosable
+            self.testWindow = A.NSWindow.alloc().initWithContentRect_styleMask_backing_defer_(
+                ((0, 0), (800, 540)), style, A.NSBackingStoreBuffered, False)
+            self.localize(self.testWindow, "setTitle_", "Normale G15-Tasten prüfen")
+            self.testWindow.setReleasedWhenClosed_(False)
+            self.testWindow.setDelegate_(self)
+            self.testWindow.center()
+            self.testLabel("Normale G15-Tasten prüfen", ((24, 486), (752, 32)), size=23)
+            self.testLabel("Alle Tasten loslassen, Start drücken. Dann die Prüftaste genau zehnmal langsam drücken und jeweils ganz loslassen. Danach auswerten. Gemessen wird nur die physische G15; Texte werden nicht gespeichert.",
+                           ((24, 408), (752, 70)))
+            self.testTarget = A.NSPopUpButton.alloc().initWithFrame_pullsDown_(((24, 366), (300, 30)), False)
+            self.testTarget.addItemsWithTitles_([self.tr(name) for _, name in KEYS])
+            self.testTarget.setTarget_(self)
+            self.testTarget.setAction_("testTarget:")
+            self.testWindow.contentView().addSubview_(self.testTarget)
+            self.testStart = self.testButton("Start", "startKeyboardTest:", ((344, 365), (100, 32)))
+            self.testStop = self.testButton("Stoppen", "stopKeyboardTest:", ((454, 365), (100, 32)))
+            self.testReset = self.testButton("Zurücksetzen", "resetKeyboardTest:", ((564, 365), (212, 32)))
+            self.testStatus = self.testLabel("", ((24, 313), (540, 44)))
+            self.testButton("Zugriff …", "recordAccess:", ((590, 318), (186, 32)))
+            self.testFinish = self.testButton("Ich habe zehnmal gedrückt – auswerten", "finishKeyboardTest:", ((24, 270), (752, 32)))
+            self.testMetrics = self.testLabel("", ((24, 119), (752, 142)), size=15)
+            self.testResult = self.testLabel("", ((24, 54), (752, 60)))
+            self.testLabel("Langes Halten und schnelle Wiederbetätigung sind Hinweise, kein Defektbeweis. Außerhalb dieses Fensters kann die Taste weiterhin normal wirken. Schließen stoppt die Messung.",
+                           ((24, 8), (752, 42)), size=11)
+        self.refreshKeyboardTest()
+        self.testWindow.makeKeyAndOrderFront_(None)
+        A.NSApplication.sharedApplication().activateIgnoringOtherApps_(True)
+
+    def testTarget_(self, sender):
+        self.keyboardTest.reset(KEYS[sender.indexOfSelectedItem()][0])
+
+    def startKeyboardTest_(self, sender):
+        import Quartz as Q
+        if not Q.CGPreflightListenEventAccess():
+            self.keyboardTest.reset(KEYS[self.testTarget.indexOfSelectedItem()][0])
+            self.keyboardTest.status = "Tastaturzugriff verweigert. Eingabeüberwachung prüfen und App neu starten."
+            self.keyboardTest.session_problem = True
+            Q.CGRequestListenEventAccess()
+            return
+        self.keyboardTest.start(KEYS[self.testTarget.indexOfSelectedItem()][0])
+        self.testWindow.makeFirstResponder_(None)
+
+    def stopKeyboardTest_(self, sender):
+        self.keyboardTest.stop()
+
+    def resetKeyboardTest_(self, sender):
+        self.keyboardTest.reset(KEYS[self.testTarget.indexOfSelectedItem()][0])
+
+    def finishKeyboardTest_(self, sender):
+        self.keyboardTest.finish(10)
+
+    @objc.python_method
+    def refreshKeyboardTest(self):
+        data = self.keyboardTest.snapshot()
+        self.testStatus.setStringValue_(self.tr(data["status"]))
+        self.testTarget.setEnabled_(not data["running"])
+        self.testStart.setEnabled_(not data["running"])
+        self.testStop.setEnabled_(data["running"])
+        self.testFinish.setEnabled_(not data["session_problem"] and (data["running"] or data["seen"]))
+        self.testReset.setEnabled_(not data["running"])
+        index = self.testTarget.indexOfSelectedItem()
+        titles = [self.tr(name) for _, name in KEYS]
+        if str(self.testTarget.itemTitleAtIndex_(0)) != titles[0]:
+            self.testTarget.removeAllItems()
+            self.testTarget.addItemsWithTitles_(titles)
+            self.testTarget.selectItemAtIndex_(index)
+        state = self.tr("Unklar") if data["uncertain"] or not data["seen"] else self.tr("Gedrückt" if data["held"] else "Losgelassen")
+        self.testMetrics.setStringValue_(self.tr(
+            "Drücken: {presses}    Loslassen: {releases}\nZustand: {state}    Gemeldete Haltedauer: {duration:.2f} s\nLängste Haltedauer: {max_hold:.2f} s\nSchnelle Wiederbetätigungen (≤ 50 ms): {rapid}\nUngültige/Rollover-Meldungen: {problems}",
+            presses=data["presses"], releases=data["releases"], state=state,
+            duration=data["duration"], max_hold=data["max_hold"], rapid=data["rapid"], problems=data["problems"]))
+        self.testMetrics.setTextColor_(A.NSColor.systemOrangeColor() if data["held"] and data["duration"] >= 2 else A.NSColor.labelColor())
+        self.testResult.setStringValue_(self.tr(result_message(data)))
 
 
 def main():
