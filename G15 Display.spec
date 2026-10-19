@@ -21,8 +21,8 @@ app = BUNDLE(
     bundle_identifier="local.g15display.app",
     info_plist={
         "CFBundleDisplayName": "G15 Display",
-        "CFBundleShortVersionString": "0.2.0",
-        "CFBundleVersion": "2",
+        "CFBundleShortVersionString": "1.0.0",
+        "CFBundleVersion": "100",
         "LSUIElement": True,
         "NSHighResolutionCapable": True,
         "NSAppleEventsUsageDescription": "Zeigt Titel aus Spotify und Music auf deiner G15 an und steuert die Wiedergabe über die Displaytasten.",

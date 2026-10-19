@@ -1,9 +1,13 @@
-# G15 Display – Python-Prototyp
+# G15 Display
 
 Ansteuerung des monochromen Displays der **Logitech G15, erste Generation**
 (klappbares Display, blaue Beleuchtung) unter macOS. Python ab 3.10.
 
 ## macOS-App
+
+Version **1.0.0** gibt es unter [GitHub Releases](https://github.com/Tooker/G15Display/releases/tag/1.0.0).
+Das Archiv `G15-Display-1.0.0-macOS-arm64.zip` enthält die eigenständige App
+für Apple Silicon. Nach dem Entpacken kann sie in den Programme-Ordner kopiert werden.
 
 Die fertige App liegt unter **`dist/G15 Display.app`**. Per Doppelklick öffnen;
 für den Betrieb ist kein Terminal und keine separate Python-Installation nötig.
@@ -28,8 +32,9 @@ Systemeinstellungen. Es werden keine Berechtigungen automatisch erteilt.
 Codex-Limits benötigen weiterhin die angemeldete ChatGPT-/Codex-Installation;
 die App bringt deren Zugangsdaten oder Programmdateien nicht mit.
 
-Die App ist lokal signiert. Öffentlicher Vertrieb mit Developer-ID und
-Notarisierung ist nicht Bestandteil dieses lokalen Builds. Sie kann als ganze
+Die App ist lokal signiert, ohne Developer-ID und ohne Apple-Notarisierung.
+macOS kann den Start einer heruntergeladenen Kopie deshalb zunächst blockieren.
+Sie kann als ganze
 `.app` verschoben werden und greift nicht auf die Projekt-`.venv` zurück.
 
 ### App erneut bauen
@@ -45,7 +50,7 @@ und Wiederverbinden laufen getrennt davon. Die Gerätesperre wird auch von
 den aktualisierten Kommandozeilenprogrammen verwendet.
 Fehler der App werden in `~/Library/Logs/G15 Display.log` protokolliert.
 
-### G-Tasten und Makroaufnahme (Version 0.2)
+### G-Tasten und Makroaufnahme
 
 Im Hauptfenster **G-Tasten …** oder in der Menüleiste **G-Tasten / Makros …**
 öffnen. Das Makrofenster ermöglicht:
@@ -114,10 +119,11 @@ Windows und ist kein Cross-Compiler:
 
 ## Git
 
-Lokales Repository mit Hauptzweig `main`. Quellen, Tests, Dokumentation und
+Öffentliches Repository: [Tooker/G15Display](https://github.com/Tooker/G15Display),
+Hauptzweig `main`. Quellen, Tests, Dokumentation und
 Build-Anleitung sind versioniert. Python-Umgebung, App-Builds, Vorschauen,
-lokale Konfiguration und Logs sind ausgeschlossen. Ein GitHub-Remote wurde
-nicht eingerichtet.
+lokale Konfiguration und Logs sind ausgeschlossen. Fertige App-Pakete werden
+als Release-Anhänge veröffentlicht.
 
 ## Starten
 

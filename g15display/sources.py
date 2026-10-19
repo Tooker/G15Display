@@ -82,7 +82,7 @@ class CodexClient:
                     stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
                 self.reader = threading.Thread(target=self._read, args=(self.process, self.messages), daemon=True)
                 self.reader.start()
-                self._call("initialize", {"clientInfo": {"name": "g15display", "version": "0.1.0"}})
+                self._call("initialize", {"clientInfo": {"name": "g15display", "version": "1.0.0"}})
                 self.process.stdin.write('{"method":"initialized","params":{}}\n')
                 self.process.stdin.flush()
             result = self._call("account/rateLimits/read")
