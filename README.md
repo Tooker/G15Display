@@ -1,280 +1,271 @@
 # G15 Display
 
-Ansteuerung des monochromen Displays der **Logitech G15, erste Generation**
-(klappbares Display, blaue Beleuchtung) unter macOS. Python ab 3.10.
+A Python controller for the monochrome display of the **first-generation
+Logitech G15** (folding display, blue backlight), running on macOS.
+Requires Python 3.10 or later when running from source.
 
-## macOS-App
+## macOS app
 
-Version **1.0.0** gibt es unter [GitHub Releases](https://github.com/Tooker/G15Display/releases/tag/1.0.0).
-Das Archiv `G15-Display-1.0.0-macOS-arm64.zip` enthält die eigenständige App
-für Apple Silicon. Nach dem Entpacken kann sie in den Programme-Ordner kopiert werden.
+Download version **1.0.0** from [GitHub Releases](https://github.com/Tooker/G15Display/releases/tag/1.0.0).
+`G15-Display-1.0.0-macOS-arm64.zip` contains the standalone Apple Silicon app.
+Extract it and copy `G15 Display.app` to your Applications folder.
 
-Die fertige App liegt unter **`dist/G15 Display.app`**. Per Doppelklick öffnen;
-für den Betrieb ist kein Terminal und keine separate Python-Installation nötig.
-Die App wurde für diesen Apple-Silicon-Mac gebaut und ist etwa 34 MB groß.
+When built locally, the app is at **`dist/G15 Display.app`**. Double-click to
+open it; no Terminal or separate Python installation is required. The Apple
+Silicon app is approximately 34 MB uncompressed.
 
-- Live-Vorschau mit derselben Pixelschrift wie auf der Tastatur.
-- Ansichten per Auswahlfeld, Bildschirmtasten oder den echten G15-Tasten wechseln.
-- `Verbinden`/`Trennen` steuert den Gerätezugriff. Vorschau und laufende Timer
-  bleiben beim Trennen aktiv; beim Beenden der App werden die Timer verworfen.
-- Timer- und Pomodoro-Zeiten sind einstellbar und werden als macOS-Einstellung
-  gespeichert. `Zeiten anwenden` setzt beide Timer zurück.
-- Schließen des Fensters lässt die App unter **G15 in der Menüleiste** weiterlaufen.
-  Dort kann das Fenster wieder geöffnet oder die App beendet werden.
-- Nach Abziehen/Anstecken der G15 wird die Verbindung automatisch neu hergestellt.
-- Pro Benutzer kann nur ein Programm das Display belegen. Ein noch laufendes
-  altes Terminal-Menü zuerst dort mit Strg+C beenden. Die App wartet darauf und
-  verbindet sich anschließend automatisch.
+The current app and LCD interface use German labels. Their English meanings
+are included below where needed.
 
-Für Musik kann macOS erneut eine Freigabe für **G15 Display** verlangen.
-Bei fehlendem Tastaturzugriff öffnet `Zugriff …` die Eingabeüberwachung in den
-Systemeinstellungen. Es werden keine Berechtigungen automatisch erteilt.
-Codex-Limits benötigen weiterhin die angemeldete ChatGPT-/Codex-Installation;
-die App bringt deren Zugangsdaten oder Programmdateien nicht mit.
+- Live preview using the same pixel font as the keyboard display.
+- Switch pages using the page selector, on-screen buttons, or physical G15 buttons.
+- `Verbinden` / `Trennen` (Connect / Disconnect) controls device access.
+  Preview and timers continue while disconnected; quitting discards timer state.
+- Timer and Pomodoro durations are configurable and saved in macOS preferences.
+  `Zeiten anwenden` (Apply durations) resets both timers.
+- Closing the window keeps the app running under **G15 in the menu bar**.
+  Use that menu to reopen the window or quit.
+- The app automatically reconnects after unplugging and reconnecting the G15.
+- Only one program per user can control the display. If the older Terminal
+  dashboard is still running, stop it with Ctrl+C. The app waits and then connects.
 
-Die App ist lokal signiert, ohne Developer-ID und ohne Apple-Notarisierung.
-macOS kann den Start einer heruntergeladenen Kopie deshalb zunächst blockieren.
-Sie kann als ganze
-`.app` verschoben werden und greift nicht auf die Projekt-`.venv` zurück.
+macOS may request permission for **G15 Display** to access music players.
+If keyboard access is unavailable, `Zugriff …` (Access) opens Input Monitoring
+in System Settings. Permissions are never granted automatically.
+Codex limits require an existing signed-in ChatGPT/Codex installation;
+the app does not bundle its credentials or executables.
 
-### App erneut bauen
+The app is ad-hoc signed, without a Developer ID or Apple notarization.
+macOS may initially block a downloaded copy. The entire `.app` can be moved;
+it does not depend on the project's `.venv` directory.
+
+### Rebuilding the app
+
+Create the Python environment described under [Running from source](#running-from-source), then run:
 
 ```sh
 .venv/bin/python -m pip install -e '.[app]'
 .venv/bin/python scripts/build_app.py
 ```
 
-`G15 Display.spec` bündelt Python, Cocoa/PyObjC, HIDAPI, Pillow und psutil.
-Die Oberfläche bleibt auf dem macOS-Hauptthread; Datenabfragen, USB-Zugriff
-und Wiederverbinden laufen getrennt davon. Die Gerätesperre wird auch von
-den aktualisierten Kommandozeilenprogrammen verwendet.
-Fehler der App werden in `~/Library/Logs/G15 Display.log` protokolliert.
+`G15 Display.spec` bundles Python, Cocoa/PyObjC, Quartz, HIDAPI, Pillow, and
+psutil. The UI runs on the macOS main thread; data polling, USB access, and
+reconnection run separately. Updated command-line tools share the same device
+lock. App errors are logged to `~/Library/Logs/G15 Display.log`.
 
-### G-Tasten und Makroaufnahme
+### G-keys and macro recording
 
-Im Hauptfenster **G-Tasten …** oder in der Menüleiste **G-Tasten / Makros …**
-öffnen. Das Makrofenster ermöglicht:
+Open **G-Tasten …** (G-keys) in the main window or **G-Tasten / Makros …**
+(G-keys / Macros) from the menu bar:
 
-1. Bank **M1–M3** und Ziel **G1–G18** wählen, optional einen Namen eingeben.
-2. **Aufnehmen** drücken. Nach drei Sekunden beginnt die Aufnahme; in dieser
-   Zeit zum gewünschten Zielprogramm wechseln.
-3. Die gewünschte Tastenfolge einschließlich Tastenkombinationen eingeben.
-4. **Stoppen** oder die echte **MR-Taste** drücken. Die Aufnahme wird der
-   ausgewählten G-Taste zugeordnet und lokal gespeichert.
-5. Die G-Taste löst das Makro im gerade aktiven Programm aus. **Testen** gibt
-   ebenfalls drei Sekunden Zeit, zuerst das Zielprogramm zu aktivieren.
+1. Select a bank **M1–M3** and target **G1–G18**, optionally entering a name.
+2. Click **Aufnehmen** (Record). Recording starts after three seconds;
+   switch to the target application during the countdown.
+3. Type the desired sequence, including any keyboard shortcuts.
+4. Click **Stoppen** (Stop) or press the physical **MR** key. The recording
+   is assigned to the selected G-key and saved locally.
+5. Press that G-key to play the macro in the currently active application.
+   **Testen** (Test) also gives you three seconds to focus the target application.
 
-Während der Aufnahme stehen ein roter Hinweis im Makrofenster und **● REC**
-in der Menüleiste. Es werden ausschließlich Tastaturereignisse erfasst, keine
-Mausbewegungen. Außerhalb einer ausdrücklich gestarteten Aufnahme wird kein
-globaler Tastatur-Listener installiert. Maximal 60 Sekunden beziehungsweise
-500 Ereignisse werden aufgezeichnet. Abbrechen durch Schließen des Makrofensters,
-leere oder vom System unterbrochene Aufnahmen ersetzen das bisherige Makro nicht.
-Während einer Aufnahme werden keine G-Tasten-Makros wiedergegeben.
+During recording, a red status message appears in the macro window and
+**● REC** appears in the menu bar. Only keyboard events are captured, not mouse
+movements. No global keyboard listener is installed outside an explicitly
+started recording. Recordings are limited to 60 seconds or 500 events.
+Closing the macro window cancels recording. Canceled, empty, or system-interrupted
+recordings do not replace the previous macro. G-key macros cannot play while
+recording.
 
-Zum Aufnehmen benötigt **G15 Display** die macOS-**Eingabeüberwachung**;
-zum Wiedergeben die **Bedienungshilfen**. Die beiden Freigabe-Schaltflächen
-öffnen die entsprechenden Systemeinstellungen. Nach einer neuen Freigabe kann
-ein Neustart der App nötig sein. Die App erteilt sich keine Berechtigung selbst.
+Recording requires macOS **Input Monitoring** permission; playback requires
+**Accessibility** permission. The two permission buttons open the corresponding
+System Settings pages. Restarting the app may be necessary after granting access.
+The app does not grant itself permission.
 
-**MR stoppt auch eine laufende oder angekündigte Wiedergabe.** Beim Abbruch
-werden von der Wiedergabe noch gehaltene Tasten freigegeben. Eine zweite
-Wiedergabe wird während einer laufenden nicht zusätzlich gestartet. Eigene
-Wiedergabeereignisse sind markiert und werden nicht wieder aufgenommen.
+**MR also stops active or scheduled playback.** Canceling playback releases any
+keys still held by the macro. A second playback cannot start while one is running.
+Synthetic playback events are tagged and excluded from recording.
 
-Die echte M1/M2/M3-Taste oder die Bankauswahl im Makrofenster aktiviert die
-jeweilige Bank. Die M-LEDs werden noch nicht synchronisiert. Bestehende
-G-Tasten-Belegungen anderer Programme werden nicht entfernt und können
-parallel reagieren.
+Press a physical M1/M2/M3 key or use the bank selector to activate that bank.
+The M-key LEDs are not synchronized yet. Existing G-key mappings in other
+programs are not removed and may respond at the same time.
 
-Makros liegen unter
-`~/Library/Application Support/G15 Display/macros.json`, mit lokalen Dateirechten
-und atomarem Speichern. Eine beschädigte Datei wird nicht überschrieben.
-Die Datei enthält Tastencodes, Zusatztasten und Zeitabstände und wird nicht
-ins Git-Repository aufgenommen. Aufnahmen sind mit dem Betriebssystem markiert;
-ein macOS-Makro wird nicht mit falschen Tastencodes unter Windows abgespielt.
+Macros are stored in
+`~/Library/Application Support/G15 Display/macros.json`, using local file
+permissions and atomic writes. A corrupt file is not overwritten. The file
+contains keycodes, modifier flags, and timing, and is not included in Git.
+Recordings carry a platform identifier; a macOS macro will not play on Windows
+using incompatible keycodes.
 
-## Windows-Kompatibilität
+## Windows compatibility
 
-**Die aktuelle App ist eine macOS-App und läuft nicht unverändert unter Windows.**
-Der Python-HIDAPI-Wrapper unterstützt Windows, Linux und macOS:
-[Projektbeschreibung](https://github.com/trezor/cython-hidapi).
-Unser Bildformat, die Pixelschrift, Timer und der G15-Tastendecoder sind
-weitgehend unabhängig vom Betriebssystem. Für einen Windows-Port fehlen:
+**The current app is for macOS and does not run unchanged on Windows.**
+The Python HIDAPI wrapper supports Windows, Linux, and macOS:
+[project documentation](https://github.com/trezor/cython-hidapi).
+The image format, pixel font, timers, and G15 key decoder are largely independent
+of the operating system. A Windows port still requires:
 
-| Bestandteil | Aktuell | Für Windows nötig |
+| Component | Current implementation | Required for Windows |
 | --- | --- | --- |
-| Oberfläche | Cocoa/PyObjC | Windows-kompatible Oberfläche |
-| Makroaufnahme/Wiedergabe | Quartz | Windows-eigene Tastatur-Anbindung |
-| Gerätesperre | `fcntl` | Windows-kompatible Sperre |
-| Netzwerkinterface | `/sbin/route` | Windows-Routenauswahl |
-| Musikanzeige | AppleScript | Windows-Player-/Medienanbindung |
-| App-Paket | arm64 `.app` | Eigenständiger Build auf Windows |
+| UI | Cocoa/PyObjC | A Windows-compatible UI |
+| Macro recording/playback | Quartz | Native Windows keyboard integration |
+| Device lock | `fcntl` | A Windows-compatible lock |
+| Network interface selection | `/sbin/route` | Windows route lookup |
+| Music information | AppleScript | Windows player/media integration |
+| App package | arm64 `.app` | A separate build on Windows |
 
-USB-Reports und G-Tasten müssen dort zusätzlich am Gerät geprüft werden,
-insbesondere neben installierter Logitech-Software. Es wurde noch kein
-Windows-Hardwaretest durchgeführt. PyInstaller erzeugt eine Windows-EXE auf
-Windows und ist kein Cross-Compiler:
-[PyInstaller-Dokumentation](https://pyinstaller.org/en/stable/).
+USB reports and G-keys also need physical testing on Windows, particularly
+alongside Logitech software. No Windows hardware test has been performed.
+PyInstaller builds Windows executables on Windows; it is not a cross-compiler:
+[PyInstaller documentation](https://pyinstaller.org/en/stable/).
 
-## Git
+## Repository
 
-Öffentliches Repository: [Tooker/G15Display](https://github.com/Tooker/G15Display),
-Hauptzweig `main`. Quellen, Tests, Dokumentation und
-Build-Anleitung sind versioniert. Python-Umgebung, App-Builds, Vorschauen,
-lokale Konfiguration und Logs sind ausgeschlossen. Fertige App-Pakete werden
-als Release-Anhänge veröffentlicht.
+Public repository: [Tooker/G15Display](https://github.com/Tooker/G15Display),
+default branch `main`. Source code, tests, documentation, and build instructions
+are versioned. Python environments, app builds, previews, local configuration,
+and logs are excluded. Standalone app packages are published as release assets.
 
-## Starten
+## Running from source
 
-Im Projektordner einmalig eine lokale Python-Umgebung anlegen und installieren:
+Create and install a local Python environment in the project directory:
 
 ```sh
 python3 -m venv .venv
 .venv/bin/python -m pip install -e .
 ```
 
-Danach:
+Then run:
 
 ```sh
-# Angeschlossene Display-Schnittstellen auflisten
+# List connected display interfaces
 .venv/bin/python -m g15display devices
 
-# Je Argument eine Zeile, maximal vier Zeilen
-.venv/bin/python -m g15display text "Hallo Tobias!" "Python auf der G15" "160 x 43 Pixel"
+# One line per argument, up to four lines
+.venv/bin/python -m g15display text "Hello G15!" "Python on the G15" "160 x 43 pixels"
 
-# Laufende Uhr, beenden mit Strg+C
+# Live clock; stop with Ctrl+C
 .venv/bin/python -m g15display clock
 
-# Begrenzter Testlauf
+# Run for a limited time
 .venv/bin/python -m g15display clock --seconds 5
 
-# Display leeren
+# Clear the display
 .venv/bin/python -m g15display clear
 
-# Sondertasten live im Terminal und auf dem LCD anzeigen
+# Show special-key events in Terminal and on the LCD
 .venv/bin/python -m g15display keys --display
 
-# Tastentest nach 30 Sekunden beenden
+# Stop the key test after 30 seconds
 .venv/bin/python -m g15display keys --display --seconds 30
 
-# PNG-Vorschau ohne Zugriff auf USB
+# Generate a PNG preview without USB access
 .venv/bin/python -m g15display clock --preview preview.png
 ```
 
-Nach der Installation funktioniert alternativ `.venv/bin/g15` mit denselben
-Argumenten. Ein übertragenes Bild bleibt beim Beenden stehen; `clear` leert es.
-Die Uhr verwendet die lokale Zeitzone des Rechners.
+After installation, `.venv/bin/g15` accepts the same arguments.
+The last transmitted image remains on the display after exit; use `clear` to
+remove it. The clock uses the computer's local time zone.
 
-## Dashboard-Menü
+## Dashboard menu
 
-Zum Starten auf diesem Mac **`G15-Menue.command` doppelklicken**. Das Menü
-läuft dann in einem eigenen Terminalfenster; dort beendet **Strg+C** das Programm.
-So kann macOS auch sichtbar nach Zugriff auf die Musikplayer fragen.
-Alternativ im Projektordner starten:
+On macOS, **double-click `G15-Menue.command`** to launch the dashboard in a
+separate Terminal window. Press **Ctrl+C** there to stop it. This also allows
+macOS to show permission prompts for music player access.
+Alternatively, run it from the project directory:
 
 ```sh
 .venv/bin/python -m g15display menu
 
-# Mit einer bestimmten Ansicht starten
+# Start on a specific page
 .venv/bin/python -m g15display menu --page limits
 
-# Eigene Timerzeiten in Minuten; vier Pomodoro-Arbeitsrunden
+# Custom durations in minutes; four Pomodoro work rounds
 .venv/bin/python -m g15display menu --timer-minutes 10 --work-minutes 25 --break-minutes 5 --rounds 4
 
-# Eine Seite ohne USB als PNG prüfen (liest echte Datenquellen)
+# Preview a page as a PNG without USB (queries real data sources)
 .venv/bin/python -m g15display menu --page network --preview preview.png
 
-# Alle sieben Ansichten und die Übersicht als gemeinsames Vorschaubild
+# Combine all seven pages and the menu into one preview image
 .venv/bin/python scripts/preview_menu.py
 ```
 
-Die **vier Funktionstasten unter dem Display, von links nach rechts**:
+The **four function buttons below the display, from left to right**:
 
-| Taste | In einer Ansicht | In der Menüübersicht |
+| Key | On a page | In the menu |
 | --- | --- | --- |
-| L2 | Vorherige Ansicht | Vorherigen Eintrag auswählen |
-| L3 | Nächste Ansicht | Nächsten Eintrag auswählen |
-| L4 | Angezeigte Aktion, beim Loslassen | Gewählte Ansicht öffnen |
-| L5 | Menüübersicht öffnen | Zur Uhr zurück |
+| L2 | Previous page | Select previous entry |
+| L3 | Next page | Select next entry |
+| L4 | Perform the displayed action on release | Open selected page |
+| L5 | Open the menu | Return to the clock |
 
-Die Beschriftungen stehen immer unten auf dem LCD. L1 öffnet zusätzlich die
-Übersicht. Das Menü umfasst sieben Seiten:
+Button labels always appear at the bottom of the LCD. L1 also opens the menu.
+The dashboard has seven pages:
 
-| Seite | Daten und Bedienung |
+| Page | Data and controls |
 | --- | --- |
-| Uhr | Lokale Uhrzeit, Datum, Wochentag und Kalenderwoche |
-| Codex-Limits | Verbleibende Prozentwerte als Balken; L4 wechselt zu Reset-Zeitpunkten |
-| Codex aktiv | Anzahl lokal erkannter aktiver Aufgaben und Chatname; L4 zeigt die nächste Aufgabe |
-| Timer | Standardmäßig 5 Minuten; L4 startet/pausiert, L4 mindestens 1 Sekunde halten setzt zurück |
-| Pomodoro | 25 Minuten Arbeit, 5 Minuten Pause, vier Arbeitsrunden; gleiche Bedienung wie Timer |
-| Musik | Spotify und Apple Music: Titel, Interpret, Fortschritt; L4 schaltet Play/Pause |
-| Netzwerk | Standard-Netzwerkinterface, IPv4 und aktuelle Down-/Uploadrate in KiB/s bzw. MiB/s |
+| Clock | Local time, date, weekday, and calendar week |
+| Codex limits | Remaining percentages as bars; L4 switches to reset times |
+| Codex activity | Locally detected active task count and chat name; L4 shows the next task |
+| Timer | Five minutes by default; L4 starts/pauses, hold L4 for at least one second to reset |
+| Pomodoro | 25 minutes of work, five-minute breaks, four work rounds; same controls as the timer |
+| Music | Spotify and Apple Music: title, artist, progress; L4 toggles play/pause |
+| Network | Default interface, IPv4 address, and current download/upload rates in KiB/s or MiB/s |
 
-Timer laufen beim Wechsel der Ansicht weiter und verwenden eine monotone Uhr.
-Beim Phasenwechsel erscheint fünf Sekunden lang ein Hinweis in der Kopfzeile.
-Nach der letzten Pomodoro-Arbeitsrunde ist die Sitzung fertig. Eine Aktion nach
-Ablauf startet neu. Timer sind nicht persistent und geben derzeit kein Tonsignal
-aus; das Beenden des Programms verwirft ihren Zustand.
+Timers continue when switching pages and use a monotonic clock. Phase changes
+show a five-second message in the header. A Pomodoro session ends after its
+last work round. An action after completion restarts the timer. Timers are not
+persistent and currently make no sound; quitting discards their state.
 
-**Codex-Limits:** Verwendet `codex app-server --stdio` und den bestehenden lokalen
-Codex-Login. `codex` wird im PATH oder am bekannten Installationsort der
-ChatGPT-/Codex-App gesucht. Es werden ausschließlich
-Initialisierung und `account/rateLimits/read` aufgerufen, keine Modellanfragen,
-Chatänderungen oder Kontingent-Resets. `ZEIT` zeigt nur den Reset-Zeitpunkt.
-Die tatsächlich gelieferten Fenster werden ausgewertet; ein fehlendes Fenster
-wird nicht als 0 % angezeigt. Aktualisierung alle 60 Sekunden. Grundlage:
-[offizielle OpenAI-Dokumentation](https://learn.chatgpt.com/docs/app-server#6-rate-limits-chatgpt).
+**Codex limits:** Uses `codex app-server --stdio` with the existing local Codex
+login. The executable is located through PATH or known ChatGPT/Codex app
+installation paths. Only initialization and `account/rateLimits/read` are called;
+there are no model requests, chat changes, or quota resets. `ZEIT` (Time) only
+shows reset times. The actual returned usage windows are used; a missing window
+is not displayed as 0%. Updates every 60 seconds. Reference:
+[official OpenAI documentation](https://learn.chatgpt.com/docs/app-server#6-rate-limits-chatgpt).
 
-**Aufgabenstatus:** Ein eigener Codex-Server kennt die laufenden Aufgaben der
-Desktop-App nicht. Daher liest diese Seite lokal die Metadaten aus
-`~/.codex/state_*.sqlite` und die Ereignisse `task_started`, `task_complete`
-und `turn_aborted` aus den zugehörigen Sessionlogs. Es werden die 32 zuletzt
-aktualisierten, nicht archivierten Chats der letzten 24 Stunden betrachtet.
-Die Datenbank wird ausschließlich lesend geöffnet; Logdateien werden nicht
-verändert. Nach zehn Minuten ohne neue Logdaten wird eine vermeintlich aktive
-Aufgabe als unklar behandelt. Remote-Aufgaben sind nicht enthalten. Diese
-Auswertung ist eine lokale Annäherung und hängt vom installierten Codex-Logformat
-ab; die Anzeige bezeichnet sie ausdrücklich als lokale Logs. Aktualisierung
-alle drei Sekunden.
+**Task status:** A separate Codex server does not know which tasks are running
+in the desktop app. This page therefore reads local metadata from
+`~/.codex/state_*.sqlite` and `task_started`, `task_complete`, and `turn_aborted`
+events from the associated session logs. It considers the 32 most recently
+updated, non-archived chats from the past 24 hours. The database is opened
+read-only and log files are not modified. After ten minutes without new log data,
+a task that appeared active is treated as uncertain. Remote tasks are not
+included. This is a local approximation that depends on the installed Codex
+log format; the display explicitly labels it as local logs. Updates every
+three seconds.
 
-**Musik:** Nur bereits laufende Spotify-/Music-Prozesse werden abgefragt; es
-wird kein Player gestartet. Wenn beide laufen, hat ein spielender Player Vorrang,
-bei Gleichstand Spotify. Abfrage alle drei Sekunden. macOS kann eine
-Automatisierungsfreigabe für Spotify/Music verlangen, die für das startende
-Terminal bzw. Codex erteilt werden muss. Bei verweigertem Zugriff oder Timeout
-zeigt das LCD einen passenden Fehlerhinweis (Zugriff, Timeout oder Abfragefehler).
-Eine Playerabfrage wartet bis zu zehn Sekunden, damit auch die erste
-macOS-Freigabe Zeit hat. Der andere Player wird weiterhin geprüft;
-der betroffene Player wird nach 30 Sekunden erneut versucht. Ein `PLAY` ohne
-ausgewählten Player startet keine Anwendung. Andere Multimedia-Tasten sind
-weiterhin nicht Teil dieses Lesers.
+**Music:** Only already-running Spotify/Music processes are queried; no player
+is launched. When both are running, a playing player takes priority, with Spotify
+winning ties. Polling runs every three seconds. macOS may request Automation
+permission for Spotify/Music, granted to the app, Terminal, or Codex process
+launching the query. Denied access and timeouts produce an appropriate LCD error
+(access, timeout, or query failure). Queries wait up to ten seconds to allow time
+for the initial permission prompt. The other player is still checked; a failed
+player is retried after 30 seconds. `PLAY` without a selected player does not
+launch an application. Other multimedia keys are not handled by this reader.
 
-**Netzwerk:** Misst die Bytezähler des Standardinterfaces; bei VPNs kann dies
-ein Tunnelinterface sein. Das ist der beobachtete Datenverkehr und kein
-Internet-Speedtest. Die erste Messung benötigt ein zweites Sample. Die
-Aktualisierung erfolgt etwa einmal pro Sekunde.
+**Network:** Measures byte counters on the default interface, which may be a
+tunnel when using a VPN. This is observed traffic, not an internet speed test.
+The first rate calculation requires a second sample. Updates approximately
+once per second.
 
-Langsame Datenabfragen laufen im Hintergrund. Navigation und Timer bleiben
-bedienbar, wenn Codex oder ein Player nicht antwortet. Fehlende Daten werden
-als solche angezeigt, statt durch Beispielwerte ersetzt zu werden. Der
-Dashboard-Modus benötigt für die Netzwerk- und Playererkennung zusätzlich
-`psutil`; es wird beim Installieren des Projekts mit eingerichtet.
+Slow data queries run in the background. Navigation and timers remain responsive
+when Codex or a player does not answer. Missing data is shown as unavailable
+instead of being replaced with sample values. The dashboard uses `psutil` for
+network and player detection; it is installed with the project.
 
-Die LCD-Schrift besteht aus fest gezeichneten 5×7-Pixel-Zeichen mit einer
-freien Spalte Abstand. Die großen Zahlen werden exakt auf das Doppelte
-vergrößert. Alle Texte erscheinen in Großbuchstaben; Umlaute werden als
-AE/OE/UE und ß als SS dargestellt. Pro Textzeile passen maximal 26 Zeichen.
-Laufschriften warten zunächst drei Sekunden und rücken dann ein Zeichen pro
-Sekunde weiter. Nach Schrift- oder Layoutänderungen das laufende Menü mit
-Strg+C beenden und erneut starten, damit es die Änderungen lädt.
+The LCD font uses fixed 5×7 pixel characters with a one-column gap. Large digits
+are scaled to exactly twice their size. All text is uppercase; German umlauts
+are rendered as AE/OE/UE and ß as SS. Each line fits at most 26 characters.
+Scrolling text waits three seconds, then advances one character per second.
+After font or layout changes, stop the running Terminal dashboard with Ctrl+C
+and restart it to load the changes.
 
-## Eigene Inhalte
+## Custom content
 
-Pillow zeichnet ein 160 × 43 Pixel großes Schwarzweißbild. Weiß bedeutet hier
-aktiver/dunkler LCD-Pixel, Schwarz bedeutet Hintergrund. Text wird rechts
-abgeschnitten, wenn eine Zeile zu lang ist. Die Vorschau zeigt aktive Pixel
-dunkel auf blauem Hintergrund.
+Pillow draws a 160 × 43 pixel monochrome image. White represents an active/dark
+LCD pixel; black represents the background. Text that exceeds the line width is
+clipped on the right. The preview shows active pixels dark against a blue background.
 
 ```python
 from PIL import Image, ImageDraw
@@ -283,121 +274,119 @@ from g15display import G15
 image = Image.new("1", (160, 43))
 draw = ImageDraw.Draw(image)
 draw.rectangle((0, 0, 159, 42), outline=1)
-draw.text((8, 12), "Mein erstes Display", fill=1)
+draw.text((8, 12), "My first display", fill=1)
 
 with G15() as lcd:
     lcd.show(image)
 ```
 
-`render.py` erzeugt Inhalte, `display.py` übernimmt die USB-Übertragung.
-So lässt sich später die Transportschicht unabhängig in Rust ersetzen.
+`render.py` generates content; `display.py` handles USB transport. This separation
+allows the transport layer to be replaced independently with Rust later.
 
-## Tasten auslesen
+## Reading keys
 
-`keys` liest **G1–G18**, **M1–M3**, **MR**, **L1–L5** und die
-Beleuchtungstaste **LIGHT**. L1 ist die Display-Umschalttaste, L2–L5 sind
-die vier zugehörigen Funktionstasten. Die Zuordnung folgt dem G15-v1-Protokoll
-in libg15; einzelne Tasten sollten am eigenen Gerät geprüft werden.
-Normale Buchstaben-, Zahlen- und Medientasten liegen auf dem anderen
-Tastaturgerät und werden von diesem Modus nicht ausgelesen.
+`keys` reads **G1–G18**, **M1–M3**, **MR**, **L1–L5**, and the **LIGHT**
+backlight key. L1 is the display switch button; L2–L5 are its four function
+buttons. The mapping follows the G15 v1 protocol in libg15; individual keys
+should be checked on your own device. Normal letter, number, and media keys
+belong to the other keyboard device and are not read in this mode.
 
-Die G15 sendet einen neun Byte langen Input-Report mit ID **2**. Seine Bits
-beschreiben die gerade gehaltenen Sondertasten. `keys.py` dekodiert diese
-Zustände und erzeugt Ereignisse für **Drücken** und **Loslassen**.
-Mehrere gleichzeitige Tasten sind möglich. Identische Reports erzeugen keine
-doppelten Ereignisse; Timeouts und andere Report-IDs lösen keine Tasten.
-Es gibt keine automatische Tastenwiederholung. Ein beim Start bereits
-gehaltener Knopf wird beim ersten gültigen Report als gedrückt gemeldet.
-Beim Abziehen der Tastatur endet das Programm mit einer Fehlermeldung.
+The G15 sends a nine-byte input report with ID **2**. Its bits describe the
+currently held special keys. `keys.py` decodes these states into **press** and
+**release** events. Simultaneous keys are supported. Identical reports do not
+produce duplicate events; timeouts and other report IDs do not release keys.
+There is no automatic key repeat. A key already held at startup is reported as
+pressed when the first valid report arrives. Unplugging the keyboard ends the
+command with an error.
 
-Beispiel für eine Displaytaste, die zur Uhr wechselt:
+Example: switch to the clock with a display button:
 
 ```python
 from g15display import G15, clock_screen
 
 with G15() as lcd:
-    while True:  # Strg+C beendet das Beispiel
+    while True:  # Stop with Ctrl+C
         for event in lcd.read_keys(timeout_ms=100):
             if event.name == "L2" and event.pressed:
                 lcd.show(clock_screen())
 ```
 
-Das Beispiel zeichnet die Uhr einmal beim Drücken von L2. Eine laufende Uhr
-muss zusätzlich regelmäßig neu gezeichnet werden. `read_keys()` wartet maximal
-die angegebene positive Millisekundenzahl pro Report. `lcd.held_keys` liefert
-den zuletzt empfangenen Zustand.
+This draws the clock once when L2 is pressed. A live clock also needs periodic
+redrawing. `read_keys()` waits up to the specified positive number of milliseconds
+per report. `lcd.held_keys` returns the last received state.
 
-Mit `--display` ersetzt der Tastentest den bisherigen Display-Inhalt.
-Ohne diese Option wird nur im Terminal ausgegeben. Die Funktion erzeugt keine
-Tastaturbelegungen; bestehende Belegungen anderer Programme können parallel
-weiter reagieren.
+With `--display`, the key test replaces the current LCD content. Without it,
+events are printed only in Terminal. This command does not assign key mappings;
+existing mappings in other programs may still respond in parallel.
 
-## USB und macOS
+## USB and macOS
 
-Der Prototyp verwendet `hidapi` (Python-Import `hid`) und Pillow. Er adressiert
-ausschließlich **046d:c222**, das Display-/Sondertastengerät der G15 v1.
-Das normale Tastaturgerät **046d:c221** wird nicht geöffnet.
-Unter macOS wird die öffentliche HIDAPI-Funktion
-`hid_darwin_set_open_exclusive(0)` für gemeinsamen Zugriff verwendet. Da der
-Python-Wrapper diese Funktion nicht anbietet, wird sie mit `ctypes` aus genau
-seiner mitgelieferten Bibliothek geladen. Eine zweite HIDAPI-Installation ist
-nicht nötig. Die Einstellung verhindert, dass macOS oder andere Tastaturtools
-vom Gerät ausgeschlossen werden.
-Bei mehreren HID-Collections wird die herstellerspezifische Collection bevorzugt.
-Mehrere angeschlossene G15-Geräte werden nicht automatisch ausgewählt.
+The controller uses `hidapi` (Python import `hid`) and Pillow. It addresses only
+**046d:c222**, the G15 v1 display/special-key device. The normal keyboard device
+**046d:c221** is not opened.
 
-Das LCD empfängt Output-Report **3** mit **992 Bytes**, einschließlich
-32 Byte Header. Danach folgen sechs Bänder mit je 160 Bytes. Ein Byte beschreibt
-acht vertikale Pixel, niedrigstes Bit oben. Im letzten Band sind nur drei Bits
-sichtbar. Grundlage sind die Protokolldaten in
-[libg15.h](https://github.com/vividnightmare/libg15/blob/master/libg15.h) und
+On macOS, shared access is enabled through HIDAPI's public
+`hid_darwin_set_open_exclusive(0)` function. The Python wrapper does not expose
+this function, so `ctypes` loads it from the wrapper's own bundled library.
+No second HIDAPI installation is needed. This setting prevents macOS or other
+keyboard tools from being excluded from the device. If multiple HID collections
+exist, the vendor-specific collection is preferred. Multiple connected G15
+keyboards are not selected automatically.
+
+The LCD receives output report **3**, containing **992 bytes**, including a
+32-byte header. Six bands of 160 bytes follow. Each byte describes eight vertical
+pixels, least significant bit at the top. Only three bits are visible in the
+last band. Protocol references:
+[libg15.h](https://github.com/vividnightmare/libg15/blob/master/libg15.h) and
 [libg15.c](https://github.com/vividnightmare/libg15/blob/master/libg15.c).
-Die Python-Implementierung ist neu geschrieben.
+The Python implementation was written from scratch.
 
-Bei Zugriffsfehlern andere Display-Programme schließen. Falls macOS eine
-Zugriffsfreigabe verlangt, unter **Systemeinstellungen → Datenschutz & Sicherheit
-→ Eingabeüberwachung** das startende Terminal bzw. Codex prüfen und anschließend
-neu starten. Der Prototyp installiert keinen Systemtreiber und benötigt kein sudo.
+For access errors, close other display programs. If macOS requests permission,
+check the launching Terminal or Codex under **System Settings → Privacy & Security
+→ Input Monitoring**, then restart it. The controller installs no system driver
+and does not require sudo.
 
-Nach Abziehen der Tastatur beendet sich eine laufende Übertragung mit einer
-Fehlermeldung. Nach erneutem Anschließen das Programm neu starten.
-Makrobelegungen sind in der macOS-App verfügbar. Helligkeit und Autostart
-sind noch nicht implementiert.
-Ein erfolgreicher Schreibaufruf bestätigt die USB-Übertragung; die tatsächliche
-Darstellung muss zusätzlich am physischen Display geprüft werden.
+Unplugging the keyboard ends a running command-line transfer with an error.
+Restart the command after reconnecting. The native app reconnects automatically.
+Macro assignments are available in the macOS app. Brightness control and launch
+at login are not implemented yet. A successful write confirms USB transmission;
+the result must also be checked on the physical LCD.
 
-## Tests
+## Validation and tests
 
-Am 19.10.2026 mit der angeschlossenen G15 v1 unter macOS auf Apple Silicon
-geprüft: Erkennung, vollständige Übertragung eines Textbildes (992 Bytes) und
-dreisekündiger Uhrlauf erfolgreich. Python 3.14.6, hidapi 0.15.0, Pillow 13.0.0.
-Die PNG-Vorschau wurde visuell geprüft; die Textdarstellung auf dem physischen
-LCD wurde vom Nutzer bestätigt. Im anschließenden Live-Tastentest wurden
-Drücken und Loslassen von L2–L5 sowie G1–G5, G7–G10 und G12–G18 empfangen.
-Die übrigen Tasten sind anhand des Protokolls implementiert und noch nicht
-einzeln am Gerät bestätigt. Alle 54 automatischen Tests bestehen, einschließlich
-Menünavigation, Timer/Pomodoro, Hintergrundlauf bei Seitenwechsel, Datenquellen
-und Fehlerbehandlung. Limits, lokale Aufgabenmetadaten und Netzwerkdaten wurden
-live abgerufen. Nach der macOS-Freigabe lieferte Spotify den pausierten Titel,
-Position und Gesamtlänge; Apple Music antwortete mit dem Zustand `stopped`.
-Apple-Music-Titel und die Play/Pause-Steuerung sind noch nicht live bestätigt;
-beim Test wurde keine Wiedergabe verändert. Die gebündelte App wurde geöffnet:
-Vorschau, echte Datenquellen und die G15-Verbindung sind aktiv. Der Pakettest
-bestätigt arm64, gebündelte Python-Laufzeit, HIDAPI 0.15.0 und 992-Byte-Reports;
-die lokale Codesignatur wurde geprüft. Die Makrotests prüfen zusätzlich
-Profilpersistenz, getrennte M-Bänke, Start/Stopp, Abbruch mit Tastenfreigabe,
-Plattformkennzeichnung und Aufnahmefreigaben mit simulierten Tastaturereignissen.
-Das native Makrofenster und das anschließende reguläre Beenden wurden geprüft.
-Eine echte Aufnahme mit vom Nutzer erteilten macOS-Freigaben ist noch separat
-zu bestätigen. Die Menüansichten sind unter
-`previews/dashboard.png` zusammengefasst.
-USB-Zugriff war aus der Codex-Sandbox gesperrt; der Hardwaretest lief mit
-freigegebenem Gerätezugriff. Bei eigenen Tests das Programm im Terminal starten.
+Hardware checks on **2026-10-19**, using a connected G15 v1 on macOS with Apple
+Silicon: device detection, a complete 992-byte text image transfer, and a
+three-second clock run succeeded. Environment: Python 3.14.6, hidapi 0.15.0,
+Pillow 13.0.0. The PNG preview was visually checked and the user confirmed the
+text on the physical LCD. A subsequent live key test received press and release
+events for L2–L5, G1–G5, G7–G10, and G12–G18. Other keys follow the protocol
+mapping but have not each been confirmed on hardware.
+
+All 54 automated tests pass, covering menu navigation, timers/Pomodoro,
+background operation while switching pages, data sources, and error handling.
+Limits, local task metadata, and network data were retrieved live. After macOS
+permission was granted, Spotify returned the paused title, position, and duration;
+Apple Music returned `stopped`. Apple Music title display and play/pause control
+have not been confirmed live; testing did not change playback.
+
+The bundled app was opened and its preview, real data sources, and G15 connection
+were verified. The package check confirms arm64, a bundled Python runtime,
+HIDAPI 0.15.0, and 992-byte reports. The ad-hoc code signature was verified.
+Macro tests additionally cover profile persistence, separate M-banks, start/stop,
+cancellation with key release, platform identifiers, and recording permissions
+using simulated keyboard events. The native macro window and normal app exit
+were checked. A complete live recording/playback test with user-granted macOS
+permissions remains outstanding.
+
+`scripts/preview_menu.py` generates the combined page preview at
+`previews/dashboard.png`. During development, the Codex sandbox blocked USB
+access, so hardware tests ran with approved device access. For your own tests,
+run the commands in Terminal.
 
 ```sh
 .venv/bin/python -m unittest discover -s tests -v
 ```
 
-Die Tests prüfen Pixelpositionen, Bandgrenzen, Header, unbenutzte Bits,
-Geräteauswahl, unvollständige Übertragungen, Tastendekodierung, gleichzeitige
-Tasten, Drücken/Loslassen, ignorierte Reports und Schließen bei USB-Fehlern.
+Tests also cover pixel positions, band boundaries, headers, unused bits, device
+selection, incomplete transfers, key decoding, simultaneous keys, press/release
+edges, ignored reports, and cleanup after USB errors.
