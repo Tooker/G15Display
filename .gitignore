@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.egg-info/
+build/
+dist/
+.DS_Store
+preview.png
+previews/
+.env
+.env.*
+!.env.example
+*.log
+.pytest_cache/
+.coverage
